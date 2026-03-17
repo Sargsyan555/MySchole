@@ -1,0 +1,316 @@
+.loginPage {
+  max-width: 400px;
+  margin: 2rem auto;
+}
+
+.loginCard {
+  background: var(--color-surface);
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--color-border);
+}
+
+.loginCard h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  margin: 0 0 1.5rem;
+}
+
+.loginCard input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+}
+
+.loginCard input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.loginCard button {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
+.loginCard button:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.loginCard button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.loginCard .error {
+  color: #dc2626;
+  font-size: 0.9rem;
+  margin: -0.5rem 0 1rem;
+}
+
+/* Dashboard */
+.loading {
+  text-align: center;
+  padding: 3rem;
+}
+
+.dashboard {
+  max-width: 1000px;
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.topBar h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.actions a {
+  font-weight: 500;
+}
+
+.logout {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+}
+
+.logout:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tab,
+.tabActive {
+  padding: 0.75rem 1.25rem;
+  border: none;
+  background: none;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tabActive {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.message {
+  padding: 0.75rem;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+}
+
+.section h2 {
+  font-size: 1.25rem;
+  margin: 0 0 1rem;
+}
+
+.section label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 1rem 0 0.35rem;
+}
+
+.section input,
+.section textarea {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: inherit;
+}
+
+.section input:focus,
+.section textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.section button {
+  margin-top: 1rem;
+  padding: 0.65rem 1.25rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
+.section button:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.section button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.addBtn {
+  margin-bottom: 1rem !important;
+}
+
+.listAndEditor {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.reportList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.reportList li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.reportList button {
+  flex: 1;
+  margin: 0 !important;
+  padding: 0.5rem 0.75rem !important;
+  text-align: left;
+  background: var(--color-bg) !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-border);
+}
+
+.reportList button:hover {
+  border-color: var(--color-primary);
+}
+
+.reportList .selected {
+  border-color: var(--color-primary) !important;
+  background: var(--color-primary-light) !important;
+}
+
+.deleteBtn {
+  flex: 0 !important;
+  width: 32px !important;
+  min-width: 32px;
+  padding: 0.25rem !important;
+  font-size: 1.25rem;
+  line-height: 1;
+  background: transparent !important;
+  color: var(--color-text-muted) !important;
+  border: none !important;
+}
+
+.deleteBtn:hover {
+  color: #dc2626 !important;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.editor input,
+.editor textarea {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: inherit;
+}
+
+.editor textarea {
+  min-height: 200px;
+  resize: vertical;
+}
+
+.editor .fileInput {
+  padding: 0.5rem 0;
+}
+
+.editor .uploading {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.editor .orLabel {
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.editor .imagePreview {
+  margin: 0;
+}
+
+.editor .galleryPreview {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.editor .galleryPreview li {
+  position: relative;
+}
+
+.editor .galleryPreview .deleteBtn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  padding: 2px 6px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .listAndEditor {
+    grid-template-columns: 1fr;
+  }
+}

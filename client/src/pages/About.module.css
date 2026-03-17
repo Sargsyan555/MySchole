@@ -1,0 +1,112 @@
+.page {
+  max-width: 1100px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.content {
+  min-width: 0;
+}
+
+.header {
+  position: relative;
+  margin-bottom: 2rem;
+  padding: 1.25rem 0 1.25rem 1.5rem;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.06) 0%, rgba(245, 158, 11, 0.04) 100%);
+  border-radius: 0 12px 12px 0;
+  border-left: 4px solid var(--color-primary);
+}
+
+.header h1 {
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  margin: 0 0 0.4rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.subtitle {
+  font-size: 1.05rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.body {
+  font-size: 1.02rem;
+  line-height: 1.65;
+}
+
+.body p {
+  margin: 0 0 1.25rem;
+  white-space: pre-line;
+}
+
+.body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Image aside */
+.aside {
+  position: sticky;
+  top: 1.5rem;
+}
+
+.imageFrame {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.12),
+    0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  vertical-align: middle;
+}
+
+.imageOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 50%,
+    rgba(13, 148, 136, 0.15) 100%
+  );
+  pointer-events: none;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .aside {
+    order: -1;
+    position: static;
+  }
+
+  .imageFrame {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .header {
+    padding-left: 1.25rem;
+  }
+
+  .imageFrame {
+    border-radius: 12px;
+  }
+}

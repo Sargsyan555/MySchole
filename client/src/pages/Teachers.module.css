@@ -1,0 +1,81 @@
+.page {
+  max-width: 900px;
+}
+
+.page h1 {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+}
+
+.intro {
+  color: var(--color-text-muted);
+  margin: 0 0 2rem;
+}
+
+.empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background: var(--color-surface);
+  padding: 1.75rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--color-border);
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.card h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.2rem;
+}
+
+.subject {
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem;
+}
+
+.bio {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin: 0 0 0.75rem;
+  line-height: 1.5;
+}
+
+.email {
+  font-size: 0.9rem;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-text-muted);
+}
+
+.error {
+  color: #dc2626;
+}

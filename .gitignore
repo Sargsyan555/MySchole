@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+client/dist/
+client/.next/
+
+# Env and secrets
+.env
+.env.local
+.env.*.local
+
+# Uploads (generated at runtime)
+server/uploads/
+
+# OS and editor
+.DS_Store
+*.log

@@ -1,0 +1,84 @@
+.page {
+  max-width: 720px;
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.back:hover {
+  text-decoration: none;
+}
+
+.header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.header h1 {
+  font-size: 1.75rem;
+  margin: 0 0 0.5rem;
+}
+
+.date {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.summary {
+  margin: 1rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+.content {
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.content h2 {
+  font-size: 1.35rem;
+  margin: 2rem 0 0.75rem;
+}
+
+.content h3 {
+  font-size: 1.15rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.content p {
+  margin: 0 0 1rem;
+}
+
+.pdfWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pdfFrame {
+  width: 100%;
+  min-height: 480px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: #0b1220;
+}
+
+.pdfLink {
+  align-self: flex-start;
+  font-size: 0.9rem;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-text-muted);
+}
+
+.error {
+  color: #dc2626;
+}

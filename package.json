@@ -11,5 +11,8 @@
   "workspaces": [
     "client",
     "server"
-  ]
+  ],
+  "overrides": {
+    "rollup": "npm:@rollup/wasm-node@4.59.0"
+  }
 }

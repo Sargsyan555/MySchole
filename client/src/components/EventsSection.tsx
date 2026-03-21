@@ -33,7 +33,7 @@ export function EventsSection({
             <p className={styles.eventsSectionSubtitle}>{t('home.latestEventsSubtitle')}</p>
           </div>
           {showViewAllLink && (
-            <Link to="/events" className={styles.btnGhost}>
+            <Link to="/my-school/events" className={styles.btnGhost}>
               {t('home.viewAllEvents')}
             </Link>
           )}

@@ -21,12 +21,12 @@ export default function Teachers() {
   if (loading) return <div className={styles.loading}>{t('common.loading')}</div>;
   if (error) return <div className={styles.error}>{error}</div>;
 
+  const intro = t('teachers.intro').trim();
+
   return (
     <div className={styles.page}>
       <h1>{t('teachers.title')}</h1>
-      <p className={styles.intro}>
-        {t('teachers.intro')}
-      </p>
+      {intro ? <p className={styles.intro}>{intro}</p> : null}
       {teachers.length === 0 ? (
         <p className={styles.empty}>{t('teachers.empty')}</p>
       ) : (

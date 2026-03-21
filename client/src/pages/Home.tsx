@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useReports, PDF_FALLBACK_URL_EXPORT } from '../hooks/useReports';
+import { useReports } from '../hooks/useReports';
 import { useEvents } from '../hooks/useEvents';
 import { EventsSection } from '../components/EventsSection';
 import styles from './Home.module.css';
@@ -8,7 +8,7 @@ import styles from './Home.module.css';
 export default function Home() {
   const { t } = useTranslation();
   const { reports } = useReports();
-  const latestReports = reports.slice(0, 3);
+  const latestReports = reports.filter((r) => r.pdfUrl).slice(0, 3);
   const { pastEvents, upcomingEvents } = useEvents();
 
   return (
@@ -25,33 +25,33 @@ export default function Home() {
           <div className={styles.heroInner}>
             <h1 className={styles.heroTitle}>Հայկաձորի միջնակարգ դպրոց</h1>
             <div className={styles.heroActions}>
-              <Link to="/about" className={styles.btnPrimary}>
+              <Link to="/my-school/about" className={styles.btnPrimary}>
                 {t('home.aboutCta')}
               </Link>
-              <Link to="/reports" className={styles.btnSecondary}>
-                {t('home.reportsCta')}
+              <Link to="/documents" className={styles.btnSecondary}>
+                {t('home.documentsCta')}
               </Link>
             </div>
           </div>
         </div>
       </section>
       <section className={styles.cards}>
-        <Link to="/about" className={styles.card}>
+        <Link to="/my-school/about" className={styles.card}>
           <span className={styles.cardIcon}>🏫</span>
           <h3>{t('home.cardAboutTitle')}</h3>
           <p>{t('home.cardAboutBody')}</p>
         </Link>
-        <Link to="/reports" className={styles.card}>
+        <Link to="/documents" className={styles.card}>
           <span className={styles.cardIcon}>📄</span>
-          <h3>{t('home.cardReportsTitle')}</h3>
-          <p>{t('home.cardReportsBody')}</p>
+          <h3>{t('home.cardDocumentsTitle')}</h3>
+          <p>{t('home.cardDocumentsBody')}</p>
         </Link>
-        <Link to="/teachers" className={styles.card}>
+        <Link to="/my-school/staff" className={styles.card}>
           <span className={styles.cardIcon}>👩‍🏫</span>
           <h3>{t('home.cardTeachersTitle')}</h3>
           <p>{t('home.cardTeachersBody')}</p>
         </Link>
-        <Link to="/events" className={styles.card}>
+        <Link to="/my-school/events" className={styles.card}>
           <span className={styles.cardIcon}>📅</span>
           <h3>{t('home.cardEventsTitle')}</h3>
           <p>{t('home.cardEventsBody')}</p>
@@ -103,10 +103,14 @@ export default function Home() {
           <p className={styles.reportsSectionSubtitle}>{t('home.latestReportsSubtitle')}</p>
         </div>
         <ul className={styles.reportsPreview}>
-            {latestReports.map((r) => (
+            {latestReports.length === 0 ? (
+              <li className={styles.noReports}>
+                <Link to="/documents">{t('home.noDocuments')}</Link>
+              </li>
+            ) : latestReports.map((r) => (
               <li key={r.id}>
                 <a
-                  href={r.pdfUrl ?? PDF_FALLBACK_URL_EXPORT}
+                  href={r.pdfUrl!}
                   target="_blank"
                   rel="noreferrer"
                   className={styles.pdfCard}

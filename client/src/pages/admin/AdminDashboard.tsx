@@ -1,20 +1,56 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import * as api from '../../api';
+import { ABOUT_LANGS, type AboutByLang, type AboutLang } from '../../api';
 import styles from './Admin.module.css';
 
-type About = { title: string; subtitle: string; body: string };
-type Report = { id: string; title: string; summary: string; content: string; publishedAt: string; pdfUrl?: string };
+type DocType = 'budgets' | 'purchases' | 'licenses' | 'other';
+type Report = {
+  id: string;
+  title: string;
+  summary: string;
+  content: string;
+  publishedAt: string;
+  pdfUrl?: string;
+  type?: DocType;
+};
 type Teacher = { id: string; name: string; subject: string; bio: string; email: string };
 type Event = { id: string; title: string; description: string; date: string; status: 'upcoming' | 'past'; imageUrl?: string; galleryImages?: string[] };
-type Tab = 'about' | 'reports' | 'teachers' | 'events';
+type AnnType = 'vacancies' | 'admission';
+type Announcement = {
+  id: string;
+  title: string;
+  summary: string;
+  content: string;
+  publishedAt: string;
+  pdfUrl?: string;
+  type?: AnnType;
+};
+type StudentsPage = { title: string; subtitle: string; body: string };
+type Tab = 'about' | 'students' | 'documents' | 'announcements' | 'teachers' | 'events';
+
+function aboutBlockHasText(b: { title: string; subtitle: string; body: string }) {
+  return !!(b.title?.trim() || b.subtitle?.trim() || b.body?.trim());
+}
+
+function splitBodyPreview(text: string): string[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+  const byDoubleNl = trimmed.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  return byDoubleNl.length > 0 ? byDoubleNl : [trimmed];
+}
 
 export default function AdminDashboard() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<Tab>('about');
-  const [about, setAbout] = useState<About | null>(null);
+  const [tab, setTab] = useState<Tab>('documents');
+  const [aboutByLang, setAboutByLang] = useState<AboutByLang | null>(null);
+  const [aboutEditLang, setAboutEditLang] = useState<AboutLang>('hy');
+  const [studentsPage, setStudentsPage] = useState<StudentsPage | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,7 +61,40 @@ export default function AdminDashboard() {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [aboutFormDirty, setAboutFormDirty] = useState(false);
   const navigate = useNavigate();
+
+  /** Same text visitors see on the public About page for the selected language (CMS or translation fallback). */
+  const aboutClientPreview = useMemo(() => {
+    if (!aboutByLang) return null;
+    const b = aboutByLang[aboutEditLang];
+    const lng = aboutEditLang;
+    const title = b.title.trim() || i18n.t('about.title', { lng });
+    const subtitle = b.subtitle.trim() || i18n.t('about.subtitle', { lng });
+    const bodyRaw = b.body.trim() || i18n.t('about.body', { lng });
+    return { title, subtitle, bodyParagraphs: splitBodyPreview(bodyRaw) };
+  }, [aboutByLang, aboutEditLang]);
+
+  const handleAnnouncementPdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingAnnouncement) return;
+    if (file.type !== 'application/pdf') {
+      setMessage(t('adminDashboard.pdfOnly'));
+      return;
+    }
+    setUploadingPdf(true);
+    setMessage('');
+    try {
+      const { url } = await api.uploadPdf(file);
+      setEditingAnnouncement((a) => (a ? { ...a, pdfUrl: url } : a));
+      setMessage(t('adminDashboard.pdfUploaded'));
+    } catch {
+      setMessage(t('adminDashboard.pdfUploadFailed'));
+    } finally {
+      setUploadingPdf(false);
+      e.target.value = '';
+    }
+  };
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -98,8 +167,16 @@ export default function AdminDashboard() {
       return;
     }
     Promise.all([
-      api.getAbout().then(setAbout),
+      api.getAbout().then((d) => setAboutByLang(api.normalizeAboutResponse(d))),
+      api
+        .getStudentsPage()
+        .then(setStudentsPage)
+        .catch(() => setStudentsPage({ title: '', subtitle: '', body: '' })),
       fetch('/api/reports').then((r) => r.json()).then(setReports),
+      api
+        .getAnnouncements()
+        .then((data: Announcement[]) => setAnnouncements(Array.isArray(data) ? data : []))
+        .catch(() => setAnnouncements([])),
       api.getTeachers().then(setTeachers),
       api.getEvents().then((data: Event[]) => setEvents(Array.isArray(data) ? data : [])),
     ])
@@ -107,15 +184,107 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false));
   }, [navigate]);
 
+  // When opening About, reload from server so inputs match what the API serves (unless you have unsaved edits).
+  useEffect(() => {
+    if (tab !== 'about' || aboutFormDirty || loading) return;
+    let cancelled = false;
+    api
+      .getAbout()
+      .then((d) => {
+        if (!cancelled) setAboutByLang(api.normalizeAboutResponse(d));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, aboutFormDirty, loading]);
+
   const saveAbout = async () => {
-    if (!about) return;
+    if (!aboutByLang) return;
+    const block = aboutByLang[aboutEditLang];
     setSaving(true);
     setMessage('');
     try {
-      await api.updateAbout(about);
+      const next = await api.updateAbout(aboutEditLang, block);
+      setAboutByLang(api.normalizeAboutResponse(next));
+      setAboutFormDirty(false);
       setMessage(t('adminDashboard.aboutSaved'));
     } catch {
       setMessage(t('adminDashboard.failedToSave'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveStudentsPageData = async () => {
+    if (!studentsPage) return;
+    setSaving(true);
+    setMessage('');
+    try {
+      await api.updateStudentsPage(studentsPage);
+      setMessage(t('adminDashboard.studentsPageSaved'));
+    } catch {
+      setMessage(t('adminDashboard.failedToSave'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const createAnnouncement = async () => {
+    setSaving(true);
+    setMessage('');
+    try {
+      const a = await api.createAnnouncement({
+        title: '',
+        summary: '',
+        content: '',
+        publishedAt: new Date().toISOString().slice(0, 10),
+        type: 'vacancies',
+      });
+      setAnnouncements((prev) => [...prev, a]);
+      setEditingAnnouncement(a);
+      setMessage(t('adminDashboard.announcementCreated'));
+    } catch {
+      setMessage(t('adminDashboard.failedToCreateAnnouncement'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateAnnouncement = async () => {
+    if (!editingAnnouncement) return;
+    setSaving(true);
+    setMessage('');
+    try {
+      await api.updateAnnouncement(editingAnnouncement.id, {
+        title: editingAnnouncement.title,
+        summary: editingAnnouncement.summary,
+        content: editingAnnouncement.content,
+        publishedAt: editingAnnouncement.publishedAt,
+        pdfUrl: editingAnnouncement.pdfUrl,
+        type: editingAnnouncement.type,
+      });
+      setAnnouncements((prev) =>
+        prev.map((x) => (x.id === editingAnnouncement.id ? editingAnnouncement : x))
+      );
+      setMessage(t('adminDashboard.announcementSaved'));
+    } catch {
+      setMessage(t('adminDashboard.failedToSaveAnnouncement'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteAnnouncement = async (id: string) => {
+    if (!confirm(t('adminDashboard.confirmDeleteAnnouncement'))) return;
+    setSaving(true);
+    try {
+      await api.deleteAnnouncement(id);
+      setAnnouncements((prev) => prev.filter((x) => x.id !== id));
+      if (editingAnnouncement?.id === id) setEditingAnnouncement(null);
+      setMessage(t('adminDashboard.announcementDeleted'));
+    } catch {
+      setMessage(t('adminDashboard.failedToDeleteAnnouncement'));
     } finally {
       setSaving(false);
     }
@@ -126,11 +295,12 @@ export default function AdminDashboard() {
     setMessage('');
     try {
       const r = await api.createReport({
-        title: 'New Report',
+        title: '',
         summary: '',
         content: '',
         publishedAt: new Date().toISOString().slice(0, 10),
         pdfUrl: '',
+        type: 'other',
       });
       setReports((prev) => [...prev, r]);
       setEditingReport(r);
@@ -144,6 +314,10 @@ export default function AdminDashboard() {
 
   const updateReport = async () => {
     if (!editingReport) return;
+    if (!editingReport.pdfUrl?.trim()) {
+      setMessage(t('adminDashboard.pdfRequired'));
+      return;
+    }
     setSaving(true);
     setMessage('');
     try {
@@ -153,6 +327,7 @@ export default function AdminDashboard() {
         content: editingReport.content,
         publishedAt: editingReport.publishedAt,
         pdfUrl: editingReport.pdfUrl,
+        type: editingReport.type,
       });
       setReports((prev) => prev.map((r) => (r.id === editingReport.id ? editingReport : r)));
       setMessage(t('adminDashboard.reportSaved'));
@@ -300,16 +475,21 @@ export default function AdminDashboard() {
   return (
     <div className={styles.dashboard}>
       <div className={styles.topBar}>
-        <h1>{t('adminDashboard.title')}</h1>
+        <div className={styles.topBarText}>
+          <h1>{t('adminDashboard.title')}</h1>
+          <p className={styles.topBarLead}>{t('adminDashboard.dashboardLead')}</p>
+        </div>
         <div className={styles.actions}>
-          <Link to="/">{t('adminDashboard.viewSite')}</Link>
+          <Link to="/" className={styles.viewSiteBtn}>
+            {t('adminDashboard.viewSite')}
+          </Link>
           <button type="button" onClick={logout} className={styles.logout}>
             {t('adminDashboard.logOut')}
           </button>
         </div>
       </div>
       <nav className={styles.tabs}>
-        {(['about', 'reports', 'teachers', 'events'] as const).map((tabKey) => (
+        {(['about', 'students', 'documents', 'announcements', 'teachers', 'events'] as const).map((tabKey) => (
           <button
             key={tabKey}
             type="button"
@@ -317,7 +497,9 @@ export default function AdminDashboard() {
             onClick={() => setTab(tabKey)}
           >
             {tabKey === 'about' && t('adminDashboard.tabAbout')}
-            {tabKey === 'reports' && t('adminDashboard.tabReports')}
+            {tabKey === 'students' && t('adminDashboard.tabStudents')}
+            {tabKey === 'documents' && t('adminDashboard.tabDocuments')}
+            {tabKey === 'announcements' && t('adminDashboard.tabAnnouncements')}
             {tabKey === 'teachers' && t('adminDashboard.tabTeachers')}
             {tabKey === 'events' && t('adminDashboard.tabEvents')}
           </button>
@@ -325,36 +507,153 @@ export default function AdminDashboard() {
       </nav>
       {message && <p className={styles.message}>{message}</p>}
 
-      {tab === 'about' && about && (
-        <section className={styles.section}>
-          <h2>{t('adminDashboard.aboutPage')}</h2>
+      {tab === 'about' && aboutByLang && (
+        <section className={`${styles.section} ${styles.sectionCard}`}>
+          <div className={styles.sectionHeaderBar}>
+            <h2>{t('adminDashboard.aboutPage')}</h2>
+            <p className={styles.sectionLead}>{t('adminDashboard.aboutContentLanguageHint')}</p>
+          </div>
+          <div className={styles.aboutVersionsRow} role="status">
+            <p className={styles.aboutVersionsCaption}>{t('adminDashboard.aboutStoredVersionsCaption')}</p>
+            <ul className={styles.aboutVersionsList}>
+              {ABOUT_LANGS.map((l) => {
+                const filled = aboutBlockHasText(aboutByLang[l]);
+                const label =
+                  l === 'hy' ? t('adminDashboard.langHy') : l === 'en' ? t('adminDashboard.langEn') : t('adminDashboard.langRu');
+                return (
+                  <li key={l} className={filled ? styles.aboutVersionOk : styles.aboutVersionEmpty}>
+                    <span className={styles.aboutVersionName}>{label}</span>
+                    <span className={styles.aboutVersionState}>
+                      {filled ? t('adminDashboard.aboutVersionFilled') : t('adminDashboard.aboutVersionEmpty')}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>{t('adminDashboard.aboutContentLanguage')}</label>
+            <select
+              className={styles.selectInput}
+              value={aboutEditLang}
+              onChange={(e) => setAboutEditLang(e.target.value as AboutLang)}
+            >
+              <option value="hy">{t('adminDashboard.langHy')}</option>
+              <option value="en">{t('adminDashboard.langEn')}</option>
+              <option value="ru">{t('adminDashboard.langRu')}</option>
+            </select>
+          </div>
+          {aboutClientPreview && (
+            <div className={styles.aboutClientPreview}>
+              <p className={styles.aboutClientPreviewTitle}>{t('adminDashboard.aboutClientPreviewTitle')}</p>
+              <p className={styles.aboutClientPreviewNote}>{t('adminDashboard.aboutClientPreviewNote')}</p>
+              <div className={styles.aboutClientPreviewBox}>
+                <h3 className={styles.aboutClientPreviewH}>{aboutClientPreview.title}</h3>
+                {aboutClientPreview.subtitle ? (
+                  <p className={styles.aboutClientPreviewSub}>{aboutClientPreview.subtitle}</p>
+                ) : null}
+                <div className={styles.aboutClientPreviewBody}>
+                  {aboutClientPreview.bodyParagraphs.map((para, i) => (
+                    <p key={i}>{para}</p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <p className={styles.aboutSavedFieldsLead}>{t('adminDashboard.aboutSavedFieldsLead')}</p>
           <label>{t('adminDashboard.titleLabel')}</label>
           <input
-            value={about.title}
-            onChange={(e) => setAbout((a) => (a ? { ...a, title: e.target.value } : a))}
+            className={styles.textInput}
+            value={aboutByLang[aboutEditLang].title}
+            placeholder={i18n.t('about.title', { lng: aboutEditLang })}
+            onChange={(e) => {
+              setAboutFormDirty(true);
+              setAboutByLang((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      [aboutEditLang]: { ...prev[aboutEditLang], title: e.target.value },
+                    }
+                  : prev
+              );
+            }}
           />
           <label>{t('adminDashboard.subtitleLabel')}</label>
           <input
-            value={about.subtitle}
-            onChange={(e) => setAbout((a) => (a ? { ...a, subtitle: e.target.value } : a))}
+            className={styles.textInput}
+            value={aboutByLang[aboutEditLang].subtitle}
+            placeholder={i18n.t('about.subtitle', { lng: aboutEditLang })}
+            onChange={(e) => {
+              setAboutFormDirty(true);
+              setAboutByLang((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      [aboutEditLang]: { ...prev[aboutEditLang], subtitle: e.target.value },
+                    }
+                  : prev
+              );
+            }}
           />
           <label>{t('adminDashboard.bodyLabel')}</label>
           <textarea
-            value={about.body}
-            onChange={(e) => setAbout((a) => (a ? { ...a, body: e.target.value } : a))}
+            className={styles.textareaInput}
+            value={aboutByLang[aboutEditLang].body}
+            placeholder={i18n.t('about.body', { lng: aboutEditLang })}
+            onChange={(e) => {
+              setAboutFormDirty(true);
+              setAboutByLang((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      [aboutEditLang]: { ...prev[aboutEditLang], body: e.target.value },
+                    }
+                  : prev
+              );
+            }}
             rows={8}
           />
-          <button type="button" onClick={saveAbout} disabled={saving}>
+          <button type="button" onClick={saveAbout} disabled={saving} className={styles.primaryBtn}>
             {saving ? t('adminDashboard.saving') : t('adminDashboard.saveAbout')}
           </button>
         </section>
       )}
 
-      {tab === 'reports' && (
-        <section className={styles.section}>
-          <h2>{t('adminDashboard.reportsTitle')}</h2>
+      {tab === 'students' && studentsPage && (
+        <section className={`${styles.section} ${styles.sectionCard}`}>
+          <div className={styles.sectionHeaderBar}>
+            <h2>{t('adminDashboard.studentsPageTitle')}</h2>
+          </div>
+          <label>{t('adminDashboard.titleLabel')}</label>
+          <input
+            value={studentsPage.title}
+            onChange={(e) => setStudentsPage((s) => (s ? { ...s, title: e.target.value } : s))}
+          />
+          <label>{t('adminDashboard.subtitleLabel')}</label>
+          <input
+            value={studentsPage.subtitle}
+            onChange={(e) => setStudentsPage((s) => (s ? { ...s, subtitle: e.target.value } : s))}
+          />
+          <label>{t('adminDashboard.bodyLabel')}</label>
+          <textarea
+            value={studentsPage.body}
+            onChange={(e) => setStudentsPage((s) => (s ? { ...s, body: e.target.value } : s))}
+            rows={8}
+          />
+          <button type="button" onClick={saveStudentsPageData} disabled={saving} className={styles.primaryBtn}>
+            {saving ? t('adminDashboard.saving') : t('adminDashboard.saveStudentsPage')}
+          </button>
+        </section>
+      )}
+
+      {tab === 'documents' && (
+        <section className={`${styles.section} ${styles.sectionCard}`}>
+          <div className={styles.sectionHeaderBar}>
+            <h2>{t('adminDashboard.documentsTitle')}</h2>
+            <p className={styles.sectionLead}>{t('adminDashboard.documentsSectionLead')}</p>
+          </div>
           <button type="button" onClick={createReport} disabled={saving} className={styles.addBtn}>
-            {t('adminDashboard.addReport')}
+            {t('adminDashboard.addDocument')}
           </button>
           <div className={styles.listAndEditor}>
             <ul className={styles.reportList}>
@@ -365,7 +664,7 @@ export default function AdminDashboard() {
                     className={editingReport?.id === r.id ? styles.selected : undefined}
                     onClick={() => setEditingReport(r)}
                   >
-                    {r.title}
+                    {r.title || t('adminDashboard.untitledEvent')} — {t(r.type === 'budgets' ? 'adminDashboard.documentTypeBudgets' : r.type === 'purchases' ? 'adminDashboard.documentTypePurchases' : r.type === 'licenses' ? 'adminDashboard.documentTypeLicenses' : 'adminDashboard.documentTypeOther')}
                   </button>
                   <button
                     type="button"
@@ -379,39 +678,81 @@ export default function AdminDashboard() {
               ))}
             </ul>
             {editingReport && (
-              <div className={styles.editor}>
-                <input
-                  value={editingReport.title}
-                  onChange={(e) => setEditingReport((r) => (r ? { ...r, title: e.target.value } : r))}
-                  placeholder={t('adminDashboard.placeholderTitle')}
-                />
-                <input
-                  value={editingReport.summary}
-                  onChange={(e) => setEditingReport((r) => (r ? { ...r, summary: e.target.value } : r))}
-                  placeholder={t('adminDashboard.placeholderSummary')}
-                />
-                <input
-                  value={editingReport.publishedAt}
-                  onChange={(e) => setEditingReport((r) => (r ? { ...r, publishedAt: e.target.value } : r))}
-                  placeholder={t('adminDashboard.placeholderDate')}
-                />
-                <label>{t('adminDashboard.uploadPdfLabel')}</label>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handlePdfUpload}
-                  disabled={uploadingPdf}
-                  className={styles.fileInput}
-                />
-                {uploadingPdf && <span className={styles.uploading}>{t('adminDashboard.uploading')}</span>}
-                <label className={styles.orLabel}>{t('adminDashboard.orFileLink')}</label>
-                <input
-                  type="url"
-                  value={editingReport.pdfUrl ?? ''}
-                  onChange={(e) => setEditingReport((r) => (r ? { ...r, pdfUrl: e.target.value } : r))}
-                  placeholder={t('adminDashboard.placeholderFileLink')}
-                />
-                <button type="button" onClick={updateReport} disabled={saving}>
+              <div className={`${styles.editor} ${styles.editorPanel}`}>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>{t('adminDashboard.documentTypeLabel')}</label>
+                  <select
+                    className={styles.selectInput}
+                    value={editingReport.type || 'other'}
+                    onChange={(e) =>
+                      setEditingReport((r) =>
+                        r ? { ...r, type: e.target.value as DocType } : r
+                      )
+                    }
+                  >
+                    <option value="budgets">{t('adminDashboard.documentTypeBudgets')}</option>
+                    <option value="purchases">{t('adminDashboard.documentTypePurchases')}</option>
+                    <option value="licenses">{t('adminDashboard.documentTypeLicenses')}</option>
+                    <option value="other">{t('adminDashboard.documentTypeOther')}</option>
+                  </select>
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>{t('adminDashboard.placeholderTitle')}</label>
+                  <input
+                    className={styles.textInput}
+                    value={editingReport.title}
+                    onChange={(e) => setEditingReport((r) => (r ? { ...r, title: e.target.value } : r))}
+                    placeholder={t('adminDashboard.placeholderTitle')}
+                  />
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>{t('adminDashboard.placeholderSummary')}</label>
+                  <input
+                    className={styles.textInput}
+                    value={editingReport.summary}
+                    onChange={(e) => setEditingReport((r) => (r ? { ...r, summary: e.target.value } : r))}
+                    placeholder={t('adminDashboard.placeholderSummary')}
+                  />
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>{t('adminDashboard.placeholderDate')}</label>
+                  <input
+                    className={styles.textInput}
+                    value={editingReport.publishedAt}
+                    onChange={(e) => setEditingReport((r) => (r ? { ...r, publishedAt: e.target.value } : r))}
+                    placeholder={t('adminDashboard.placeholderDate')}
+                  />
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>
+                    {t('adminDashboard.uploadPdfLabel')} <span className={styles.requiredMark}>*</span>
+                  </label>
+                  <p className={styles.fieldHint}>{t('adminDashboard.uploadPdfHint')}</p>
+                  <label htmlFor="admin-doc-pdf" className={styles.uploadZone}>
+                    <input
+                      id="admin-doc-pdf"
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handlePdfUpload}
+                      disabled={uploadingPdf}
+                      className={styles.uploadInputHidden}
+                    />
+                    <span className={styles.uploadZoneIcon}>📄</span>
+                    <span className={styles.uploadZoneText}>{t('adminDashboard.choosePdf')}</span>
+                  </label>
+                  {uploadingPdf && <span className={styles.uploading}>{t('adminDashboard.uploading')}</span>}
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>{t('adminDashboard.orFileLink')}</label>
+                  <input
+                    className={styles.textInput}
+                    type="url"
+                    value={editingReport.pdfUrl ?? ''}
+                    onChange={(e) => setEditingReport((r) => (r ? { ...r, pdfUrl: e.target.value } : r))}
+                    placeholder={t('adminDashboard.placeholderFileLink')}
+                  />
+                </div>
+                <button type="button" onClick={updateReport} disabled={saving} className={styles.primaryBtn}>
                   {t('adminDashboard.saveReport')}
                 </button>
               </div>
@@ -420,9 +761,142 @@ export default function AdminDashboard() {
         </section>
       )}
 
+      {tab === 'announcements' && (
+        <section className={`${styles.section} ${styles.sectionCard}`}>
+          <div className={styles.sectionHeaderBar}>
+            <h2>{t('adminDashboard.announcementsTitle')}</h2>
+            <p className={styles.sectionLead}>{t('adminDashboard.announcementsSectionLead')}</p>
+          </div>
+          <button type="button" onClick={createAnnouncement} disabled={saving} className={styles.addBtn}>
+            {t('adminDashboard.addAnnouncement')}
+          </button>
+          <div className={styles.listAndEditor}>
+            <ul className={styles.reportList}>
+              {announcements.map((a) => (
+                <li key={a.id}>
+                  <button
+                    type="button"
+                    className={editingAnnouncement?.id === a.id ? styles.selected : undefined}
+                    onClick={() => setEditingAnnouncement(a)}
+                  >
+                    {a.title || t('adminDashboard.untitledEvent')} —{' '}
+                    {t(
+                      a.type === 'admission'
+                        ? 'adminDashboard.announcementTypeAdmission'
+                        : 'adminDashboard.announcementTypeVacancies'
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.deleteBtn}
+                    onClick={() => deleteAnnouncement(a.id)}
+                    title={t('adminDashboard.delete')}
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {editingAnnouncement && (
+              <div className={`${styles.editor} ${styles.editorPanel}`}>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>{t('adminDashboard.announcementTypeLabel')}</label>
+                  <select
+                    className={styles.selectInput}
+                    value={editingAnnouncement.type || 'vacancies'}
+                    onChange={(e) =>
+                      setEditingAnnouncement((x) =>
+                        x ? { ...x, type: e.target.value as AnnType } : x
+                      )
+                    }
+                  >
+                    <option value="vacancies">{t('adminDashboard.announcementTypeVacancies')}</option>
+                    <option value="admission">{t('adminDashboard.announcementTypeAdmission')}</option>
+                  </select>
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>{t('adminDashboard.placeholderTitle')}</label>
+                  <input
+                    className={styles.textInput}
+                    value={editingAnnouncement.title}
+                    onChange={(e) =>
+                      setEditingAnnouncement((x) => (x ? { ...x, title: e.target.value } : x))
+                    }
+                  />
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>{t('adminDashboard.placeholderSummary')}</label>
+                  <input
+                    className={styles.textInput}
+                    value={editingAnnouncement.summary}
+                    onChange={(e) =>
+                      setEditingAnnouncement((x) => (x ? { ...x, summary: e.target.value } : x))
+                    }
+                  />
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>{t('adminDashboard.placeholderDate')}</label>
+                  <input
+                    className={styles.textInput}
+                    value={editingAnnouncement.publishedAt}
+                    onChange={(e) =>
+                      setEditingAnnouncement((x) => (x ? { ...x, publishedAt: e.target.value } : x))
+                    }
+                  />
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>{t('adminDashboard.placeholderContent')}</label>
+                  <textarea
+                    className={styles.textareaInput}
+                    value={editingAnnouncement.content}
+                    onChange={(e) =>
+                      setEditingAnnouncement((x) => (x ? { ...x, content: e.target.value } : x))
+                    }
+                    rows={6}
+                  />
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>{t('adminDashboard.uploadPdfLabel')}</label>
+                  <p className={styles.fieldHint}>{t('adminDashboard.uploadPdfOptional')}</p>
+                  <label htmlFor="admin-ann-pdf" className={styles.uploadZone}>
+                    <input
+                      id="admin-ann-pdf"
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handleAnnouncementPdfUpload}
+                      disabled={uploadingPdf}
+                      className={styles.uploadInputHidden}
+                    />
+                    <span className={styles.uploadZoneIcon}>📎</span>
+                    <span className={styles.uploadZoneText}>{t('adminDashboard.choosePdf')}</span>
+                  </label>
+                  {uploadingPdf && <span className={styles.uploading}>{t('adminDashboard.uploading')}</span>}
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>{t('adminDashboard.orFileLink')}</label>
+                  <input
+                    className={styles.textInput}
+                    type="url"
+                    value={editingAnnouncement.pdfUrl ?? ''}
+                    onChange={(e) =>
+                      setEditingAnnouncement((x) => (x ? { ...x, pdfUrl: e.target.value } : x))
+                    }
+                  />
+                </div>
+                <button type="button" onClick={updateAnnouncement} disabled={saving} className={styles.primaryBtn}>
+                  {t('adminDashboard.saveAnnouncement')}
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {tab === 'events' && (
-        <section className={styles.section}>
-          <h2>{t('adminDashboard.eventsTitle')}</h2>
+        <section className={`${styles.section} ${styles.sectionCard}`}>
+          <div className={styles.sectionHeaderBar}>
+            <h2>{t('adminDashboard.eventsTitle')}</h2>
+          </div>
           <button type="button" onClick={createEvent} disabled={saving} className={styles.addBtn}>
             {t('adminDashboard.addEvent')}
           </button>
@@ -515,7 +989,7 @@ export default function AdminDashboard() {
                     </ul>
                   </>
                 )}
-                <button type="button" onClick={updateEvent} disabled={saving}>
+                <button type="button" onClick={updateEvent} disabled={saving} className={styles.primaryBtn}>
                   {t('adminDashboard.saveEvent')}
                 </button>
               </div>
@@ -525,8 +999,10 @@ export default function AdminDashboard() {
       )}
 
       {tab === 'teachers' && (
-        <section className={styles.section}>
-          <h2>{t('adminDashboard.teachersTitle')}</h2>
+        <section className={`${styles.section} ${styles.sectionCard}`}>
+          <div className={styles.sectionHeaderBar}>
+            <h2>{t('adminDashboard.teachersTitle')}</h2>
+          </div>
           <button type="button" onClick={createTeacher} disabled={saving} className={styles.addBtn}>
             {t('adminDashboard.addTeacher')}
           </button>
@@ -575,7 +1051,7 @@ onChange={(e) => setEditingTeacher((prev) => (prev ? { ...prev, bio: e.target.va
                     placeholder={t('adminDashboard.placeholderBio')}
                   rows={4}
                 />
-                <button type="button" onClick={updateTeacher} disabled={saving}>
+                <button type="button" onClick={updateTeacher} disabled={saving} className={styles.primaryBtn}>
                   {t('adminDashboard.saveTeacher')}
                 </button>
               </div>

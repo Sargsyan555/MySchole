@@ -1,8 +1,57 @@
 const API = '/api';
 
-export async function getAbout() {
+export type AboutLang = 'en' | 'hy' | 'ru';
+export type AboutBlock = { title: string; subtitle: string; body: string };
+export type AboutByLang = Record<AboutLang, AboutBlock>;
+
+export const ABOUT_LANGS: AboutLang[] = ['en', 'hy', 'ru'];
+
+/** Normalize API response (supports legacy flat `{ title, subtitle, body }`). */
+export function normalizeAboutResponse(raw: unknown): AboutByLang {
+  const empty = (): AboutBlock => ({ title: '', subtitle: '', body: '' });
+  const base: AboutByLang = { en: empty(), hy: empty(), ru: empty() };
+  if (!raw || typeof raw !== 'object') return base;
+  const o = raw as Record<string, unknown>;
+  if (o.en && o.hy && o.ru && typeof o.en === 'object' && typeof o.hy === 'object' && typeof o.ru === 'object') {
+    for (const lang of ABOUT_LANGS) {
+      const b = o[lang] as Partial<AboutBlock>;
+      base[lang] = {
+        title: String(b?.title ?? ''),
+        subtitle: String(b?.subtitle ?? ''),
+        body: String(b?.body ?? ''),
+      };
+    }
+    return base;
+  }
+  if ('title' in o || 'subtitle' in o || 'body' in o) {
+    base.en = {
+      title: String(o.title ?? ''),
+      subtitle: String(o.subtitle ?? ''),
+      body: String(o.body ?? ''),
+    };
+  }
+  return base;
+}
+
+export async function getAbout(): Promise<AboutByLang> {
   const r = await fetch(`${API}/about`);
   if (!r.ok) throw new Error('Failed to load about');
+  return r.json();
+}
+
+export async function updateAbout(lang: AboutLang, data: AboutBlock): Promise<AboutByLang> {
+  const r = await fetch(`${API}/admin/about`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lang, title: data.title, subtitle: data.subtitle, body: data.body }),
+  });
+  if (!r.ok) throw new Error('Failed to update');
+  return r.json();
+}
+
+export async function getStudentsPage() {
+  const r = await fetch(`${API}/students-page`);
+  if (!r.ok) throw new Error('Failed to load students page');
   return r.json();
 }
 
@@ -27,6 +76,12 @@ export async function getTeachers() {
 export async function getEvents() {
   const r = await fetch(`${API}/events`);
   if (!r.ok) throw new Error('Failed to load events');
+  return r.json();
+}
+
+export async function getAnnouncements() {
+  const r = await fetch(`${API}/announcements`);
+  if (!r.ok) throw new Error('Failed to load announcements');
   return r.json();
 }
 
@@ -99,8 +154,8 @@ export async function deleteEvent(id: string) {
   if (!r.ok) throw new Error('Failed to delete event');
 }
 
-export async function updateAbout(data: Record<string, unknown>) {
-  const r = await fetch(`${API}/admin/about`, {
+export async function updateStudentsPage(data: Record<string, unknown>) {
+  const r = await fetch(`${API}/admin/students-page`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -109,7 +164,59 @@ export async function updateAbout(data: Record<string, unknown>) {
   return r.json();
 }
 
-export async function createReport(data: { title: string; summary: string; content: string; publishedAt?: string; pdfUrl?: string }) {
+export type AnnouncementType = 'vacancies' | 'admission';
+
+export async function createAnnouncement(data: {
+  title: string;
+  summary: string;
+  content?: string;
+  publishedAt?: string;
+  pdfUrl?: string;
+  type?: AnnouncementType;
+}) {
+  const r = await fetch(`${API}/admin/announcements`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!r.ok) throw new Error('Failed to create announcement');
+  return r.json();
+}
+
+export async function updateAnnouncement(
+  id: string,
+  data: Partial<{
+    title: string;
+    summary: string;
+    content: string;
+    publishedAt: string;
+    pdfUrl: string;
+    type: AnnouncementType;
+  }>
+) {
+  const r = await fetch(`${API}/admin/announcements/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!r.ok) throw new Error('Failed to update announcement');
+  return r.json();
+}
+
+export async function deleteAnnouncement(id: string) {
+  const r = await fetch(`${API}/admin/announcements/${id}`, { method: 'DELETE' });
+  if (!r.ok) throw new Error('Failed to delete announcement');
+}
+
+export type DocumentType = 'budgets' | 'purchases' | 'licenses' | 'other';
+export async function createReport(data: {
+  title: string;
+  summary: string;
+  content?: string;
+  publishedAt?: string;
+  pdfUrl?: string;
+  type?: DocumentType;
+}) {
   const r = await fetch(`${API}/admin/reports`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -119,7 +226,10 @@ export async function createReport(data: { title: string; summary: string; conte
   return r.json();
 }
 
-export async function updateReport(id: string, data: Partial<{ title: string; summary: string; content: string; publishedAt: string; pdfUrl: string }>) {
+export async function updateReport(
+  id: string,
+  data: Partial<{ title: string; summary: string; content: string; publishedAt: string; pdfUrl: string; type: DocumentType }>
+) {
   const r = await fetch(`${API}/admin/reports/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },

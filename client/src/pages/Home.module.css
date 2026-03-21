@@ -267,6 +267,22 @@
   margin: 0;
 }
 
+.reportsPreview .noReports {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-text-muted);
+}
+
+.reportsPreview .noReports a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.reportsPreview .noReports a:hover {
+  text-decoration: underline;
+}
+
 /* PDF card – document-style clickable box */
 .pdfCard {
   display: flex;

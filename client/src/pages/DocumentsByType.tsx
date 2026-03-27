@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDocuments } from '../hooks/useDocuments';
+import { mediaUrl } from '../api';
 import { IconFileText } from '../components/SiteIcons';
 import styles from './DocumentsByType.module.css';
 
@@ -64,7 +65,7 @@ export default function DocumentsByType() {
             .map((doc) => (
               <li key={doc.id}>
                 <a
-                  href={doc.pdfUrl!}
+                  href={mediaUrl(doc.pdfUrl) ?? doc.pdfUrl!}
                   target="_blank"
                   rel="noreferrer"
                   className={styles.pdfCard}

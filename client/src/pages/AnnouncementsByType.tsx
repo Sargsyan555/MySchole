@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAnnouncements } from '../hooks/useAnnouncements';
+import { mediaUrl } from '../api';
 import styles from './AnnouncementsByType.module.css';
 
 const TYPES = ['vacancies', 'admission'] as const;
@@ -70,7 +71,7 @@ export default function AnnouncementsByType() {
               )}
               {item.pdfUrl && (
                 <a
-                  href={item.pdfUrl}
+                  href={mediaUrl(item.pdfUrl) ?? item.pdfUrl}
                   target="_blank"
                   rel="noreferrer"
                   className={styles.pdfLink}

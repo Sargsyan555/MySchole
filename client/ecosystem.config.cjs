@@ -4,8 +4,9 @@
  *   npm run build
  *   pm2 start ecosystem.config.cjs
  *
- * Optional: set a strong admin password on the server:
- *   ADMIN_PASSWORD='your-secret' pm2 start ecosystem.config.cjs --update-env
+ * Optional env (add under `env`):
+ *   ADMIN_PASSWORD   — admin login (default: admin)
+ *   CORS_ORIGINS     — comma list, e.g. https://my-schole-client.vercel.app (needed if UI is on Vercel)
  *
  * Logs: pm2 logs school
  * Status: pm2 status

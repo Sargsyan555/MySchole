@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { mediaUrl } from '../api';
 import type { Event } from '../hooks/useEvents';
 import styles from '../pages/Home.module.css';
 
@@ -48,7 +49,11 @@ export function EventsSection({
               <div className={styles.eventCardWithImage}>
                 <div className={styles.eventImageWrap}>
                   <img
-                    src={e.imageUrl || e.galleryImages?.[0] || EVENT_IMAGE_FALLBACK}
+                    src={
+                      mediaUrl(e.imageUrl) ||
+                      mediaUrl(e.galleryImages?.[0]) ||
+                      EVENT_IMAGE_FALLBACK
+                    }
                     alt={e.title}
                     className={styles.eventImage}
                     loading="lazy"
@@ -74,7 +79,7 @@ export function EventsSection({
                 {e.imageUrl && (
                   <div className={styles.eventImageWrap}>
                     <img
-                      src={e.imageUrl}
+                      src={mediaUrl(e.imageUrl) ?? e.imageUrl}
                       alt={e.title}
                       className={styles.eventImage}
                       loading="lazy"

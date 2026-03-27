@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { IconFileText, IconPaperclip } from '../../components/SiteIcons';
 import * as api from '../../api';
-import { ABOUT_LANGS, type AboutByLang, type AboutLang } from '../../api';
+import { ABOUT_LANGS, mediaUrl, type AboutByLang, type AboutLang } from '../../api';
 import styles from './Admin.module.css';
 
 type DocType = 'budgets' | 'purchases' | 'licenses' | 'other';
@@ -173,7 +173,7 @@ export default function AdminDashboard() {
         .getStudentsPage()
         .then(setStudentsPage)
         .catch(() => setStudentsPage({ title: '', subtitle: '', body: '' })),
-      fetch('/api/reports').then((r) => r.json()).then(setReports),
+      fetch(`${api.API}/reports`).then((r) => r.json()).then(setReports),
       api
         .getAnnouncements()
         .then((data: Announcement[]) => setAnnouncements(Array.isArray(data) ? data : []))
@@ -964,7 +964,11 @@ export default function AdminDashboard() {
                 {uploadingImage && <span className={styles.uploading}>{t('adminDashboard.uploading')}</span>}
                 {editingEvent.imageUrl && (
                   <p className={styles.imagePreview}>
-                    <img src={editingEvent.imageUrl} alt="" style={{ maxWidth: 120, maxHeight: 80, objectFit: 'cover' }} />
+                    <img
+                      src={mediaUrl(editingEvent.imageUrl) ?? editingEvent.imageUrl}
+                      alt=""
+                      style={{ maxWidth: 120, maxHeight: 80, objectFit: 'cover' }}
+                    />
                   </p>
                 )}
                 {editingEvent.status === 'past' && (
@@ -980,7 +984,11 @@ export default function AdminDashboard() {
                     <ul className={styles.galleryPreview}>
                       {(editingEvent.galleryImages || []).map((url, idx) => (
                         <li key={url}>
-                          <img src={url} alt="" style={{ maxWidth: 80, maxHeight: 60, objectFit: 'cover' }} />
+                          <img
+                            src={mediaUrl(url) ?? url}
+                            alt=""
+                            style={{ maxWidth: 80, maxHeight: 60, objectFit: 'cover' }}
+                          />
                           <button
                             type="button"
                             className={styles.deleteBtn}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getReport } from '../api';
+import { getReport, mediaUrl } from '../api';
 import styles from './ReportView.module.css';
 
 type Report = {
@@ -59,12 +59,12 @@ export default function ReportView() {
       {report.pdfUrl ? (
         <div className={styles.pdfWrapper}>
           <iframe
-            src={report.pdfUrl}
+            src={mediaUrl(report.pdfUrl) ?? report.pdfUrl}
             className={styles.pdfFrame}
             title={report.title}
           />
           <a
-            href={report.pdfUrl}
+            href={mediaUrl(report.pdfUrl) ?? report.pdfUrl}
             target="_blank"
             rel="noreferrer"
             className={styles.pdfLink}

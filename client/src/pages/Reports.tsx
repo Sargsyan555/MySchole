@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useReports, PDF_FALLBACK_URL_EXPORT } from '../hooks/useReports';
+import { mediaUrl } from '../api';
 import { IconFileText } from '../components/SiteIcons';
 import styles from './Reports.module.css';
 
@@ -19,7 +20,7 @@ export default function Reports() {
       </div>
       <ul className={styles.reportsPreview}>
         {reports.map((r) => {
-          const href = r.pdfUrl ?? PDF_FALLBACK_URL_EXPORT;
+          const href = r.pdfUrl ? (mediaUrl(r.pdfUrl) ?? r.pdfUrl) : PDF_FALLBACK_URL_EXPORT;
           const cardContent = (
             <>
               <span className={styles.pdfIcon}>

@@ -29,6 +29,12 @@ const PORT = Number(process.env.PORT) || 3001;
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
 
+/** Comma-separated list of browser origins allowed to call this API (e.g. your Vercel URL). */
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 ensureDirs();
 
 const storage = multer.diskStorage({
@@ -49,6 +55,20 @@ const imageStorage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 const uploadImage = multer({ storage: imageStorage, limits: { fileSize: 5 * 1024 * 1024 } });
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && CORS_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  return next();
+});
 
 app.use(express.json());
 
@@ -395,6 +415,11 @@ const server = app.listen(PORT, HOST, () => {
   }
   console.log(`Data JSON: ${path.join(__dirname, 'data')}`);
   console.log(`Uploads:   ${UPLOADS_ROOT} (pdfs/, images/)`);
+  if (CORS_ORIGINS.length) {
+    console.log(`CORS:      ${CORS_ORIGINS.join(', ')}`);
+  } else {
+    console.log('CORS:      (none — same-origin only; set CORS_ORIGINS for Vercel UI)');
+  }
 });
 
 server.on('error', (err) => {

@@ -1,4 +1,18 @@
-const API = '/api';
+/**
+ * When the UI is on Vercel (or another host) but the API runs on your VPS, set in Vercel:
+ *   VITE_API_ORIGIN = https://api.yourdomain.com   (no trailing slash; must be HTTPS if the site is HTTPS — mixed content blocks http://)
+ * On the VPS set: CORS_ORIGINS = https://my-schole-client.vercel.app
+ */
+const apiOrigin = import.meta.env.VITE_API_ORIGIN?.trim().replace(/\/$/, '');
+export const API = apiOrigin ? `${apiOrigin}/api` : '/api';
+
+/** Turn `/api/uploads/...` into an absolute URL when using a separate API origin. */
+export function mediaUrl(path: string | undefined | null): string | undefined {
+  if (path == null || path === '') return undefined;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (apiOrigin && path.startsWith('/')) return `${apiOrigin}${path}`;
+  return path;
+}
 
 export type AboutLang = 'en' | 'hy' | 'ru';
 export type AboutBlock = { title: string; subtitle: string; body: string };

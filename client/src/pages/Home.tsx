@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useReports } from '../hooks/useReports';
 import { useEvents } from '../hooks/useEvents';
 import { EventsSection } from '../components/EventsSection';
+import { mediaUrl } from '../api';
 import { IconCalendar, IconFileText, IconGraduationCap, IconSchool } from '../components/SiteIcons';
 import styles from './Home.module.css';
 
@@ -119,7 +120,7 @@ export default function Home() {
             ) : latestReports.map((r) => (
               <li key={r.id}>
                 <a
-                  href={r.pdfUrl!}
+                  href={mediaUrl(r.pdfUrl) ?? r.pdfUrl!}
                   target="_blank"
                   rel="noreferrer"
                   className={styles.pdfCard}

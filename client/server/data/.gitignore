@@ -1,2 +1,7 @@
-# Persisted About CMS (en, hy, ru) — created when admin saves
+# CMS / API persisted JSON (created when admin saves or API mutates)
 about.json
+students-page.json
+reports.json
+announcements.json
+teachers.json
+events.json

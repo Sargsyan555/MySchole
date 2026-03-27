@@ -3,19 +3,36 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import {
+  DATA_FILES,
+  UPLOADS_ROOT,
+  UPLOADS_PDFS,
+  UPLOADS_IMAGES,
+  ensureDirs,
+  writeJsonAtomic,
+  safeUnlinkUploadUrl,
+  loadStudentsPage,
+  loadReports,
+  loadAnnouncements,
+  loadTeachers,
+  loadEvents,
+  normalizeStudentsPage,
+  normalizeReport,
+  normalizeAnnouncement,
+  normalizeTeacher,
+  normalizeEvent,
+} from './persistence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = 3001;
+const PORT = Number(process.env.PORT) || 3001;
 
-// Dev admin password (change in production)
-const ADMIN_PASSWORD = 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
 
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+ensureDirs();
 
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  destination: (_req, _file, cb) => cb(null, UPLOADS_PDFS),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname) || '.pdf';
     const name = `report-${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`;
@@ -23,35 +40,49 @@ const storage = multer.diskStorage({
   },
 });
 const imageStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  destination: (_req, _file, cb) => cb(null, UPLOADS_IMAGES),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname) || '.jpg';
-    const name = `event-${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`;
+    const name = `image-${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`;
     cb(null, name);
   },
 });
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }); // 10 MB
-const uploadImage = multer({ storage: imageStorage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5 MB
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+const uploadImage = multer({ storage: imageStorage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 app.use(express.json());
 
-// Admin: upload PDF file (must be before static so POST is handled)
 app.post('/api/admin/upload-pdf', upload.single('pdf'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  const url = `/api/uploads/${req.file.filename}`;
-  res.json({ url });
+  const rel = `pdfs/${req.file.filename}`;
+  const url = `/api/uploads/${rel}`;
+  const uploadedAt = new Date().toISOString();
+  res.json({
+    url,
+    storedFileName: req.file.filename,
+    originalName: req.file.originalname || '',
+    subpath: rel,
+    uploadedAt,
+  });
 });
 
 app.post('/api/admin/upload-image', uploadImage.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
-  const url = `/api/uploads/${req.file.filename}`;
-  res.json({ url });
+  const rel = `images/${req.file.filename}`;
+  const url = `/api/uploads/${rel}`;
+  const uploadedAt = new Date().toISOString();
+  res.json({
+    url,
+    storedFileName: req.file.filename,
+    originalName: req.file.originalname || '',
+    subpath: rel,
+    uploadedAt,
+  });
 });
 
-// Serve uploaded files (so /api/uploads/filename.pdf works)
-app.use('/api/uploads', express.static(UPLOADS_DIR));
+app.use('/api/uploads', express.static(UPLOADS_ROOT));
 
-// About content per language (en, hy, ru) — persisted so all three survive restarts
+// About — same file as before
 const emptyAboutBlock = () => ({ title: '', subtitle: '', body: '' });
 const ABOUT_LANGS = ['en', 'hy', 'ru'];
 const ABOUT_DATA_FILE = path.join(__dirname, 'data', 'about.json');
@@ -92,20 +123,35 @@ function saveAboutToDisk() {
   try {
     const dir = path.dirname(ABOUT_DATA_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(ABOUT_DATA_FILE, JSON.stringify(aboutByLang, null, 2), 'utf8');
+    writeJsonAtomic(ABOUT_DATA_FILE, aboutByLang);
   } catch (e) {
     console.warn('about.json save failed:', e.message);
   }
 }
 
 let aboutByLang = loadAboutFromDisk();
-let studentsPage = { title: '', subtitle: '', body: '' };
-let reports = [];
-let announcements = [];
-let teachers = [];
-let events = [];
+let studentsPage = loadStudentsPage();
+let reports = loadReports();
+let announcements = loadAnnouncements();
+let teachers = loadTeachers();
+let events = loadEvents();
 
-// Public routes
+function saveStudentsPage() {
+  writeJsonAtomic(DATA_FILES.studentsPage, studentsPage);
+}
+function saveReports() {
+  writeJsonAtomic(DATA_FILES.reports, reports);
+}
+function saveAnnouncements() {
+  writeJsonAtomic(DATA_FILES.announcements, announcements);
+}
+function saveTeachers() {
+  writeJsonAtomic(DATA_FILES.teachers, teachers);
+}
+function saveEvents() {
+  writeJsonAtomic(DATA_FILES.events, events);
+}
+
 app.get('/api/about', (req, res) => res.json(aboutByLang));
 app.get('/api/students-page', (req, res) => res.json(studentsPage));
 app.get('/api/reports', (req, res) => res.json(reports));
@@ -118,7 +164,6 @@ app.get('/api/reports/:id', (req, res) => {
 app.get('/api/teachers', (req, res) => res.json(teachers));
 app.get('/api/events', (req, res) => res.json(events));
 
-// Admin login
 app.post('/api/admin/login', (req, res) => {
   const { password } = req.body || {};
   if (password !== ADMIN_PASSWORD) {
@@ -127,10 +172,9 @@ app.post('/api/admin/login', (req, res) => {
   res.json({ ok: true });
 });
 
-// Admin events CRUD (must be before generic 404)
 app.post('/api/admin/events', (req, res) => {
   const id = String(Date.now());
-  const event = {
+  const event = normalizeEvent({
     id,
     title: req.body.title || '',
     description: req.body.description || '',
@@ -138,29 +182,47 @@ app.post('/api/admin/events', (req, res) => {
     status: req.body.status === 'past' ? 'past' : 'upcoming',
     imageUrl: req.body.imageUrl || '',
     galleryImages: Array.isArray(req.body.galleryImages) ? req.body.galleryImages : [],
-  };
+  });
   events.push(event);
+  saveEvents();
   res.status(201).json(event);
 });
 
 app.put('/api/admin/events/:id', (req, res) => {
   const i = events.findIndex((x) => x.id === req.params.id);
   if (i === -1) return res.status(404).json({ error: 'Event not found' });
-  events[i] = {
-    ...events[i],
+  const prev = events[i];
+  const nextImage = req.body.imageUrl !== undefined ? req.body.imageUrl : prev.imageUrl;
+  const nextGallery =
+    req.body.galleryImages !== undefined
+      ? req.body.galleryImages
+      : prev.galleryImages || [];
+  if (nextImage !== prev.imageUrl) safeUnlinkUploadUrl(prev.imageUrl);
+  if (Array.isArray(prev.galleryImages)) {
+    const removed = prev.galleryImages.filter((u) => !nextGallery.includes(u));
+    removed.forEach(safeUnlinkUploadUrl);
+  }
+  events[i] = normalizeEvent({
+    ...prev,
     ...req.body,
-    id: events[i].id,
-    galleryImages: Array.isArray(req.body.galleryImages) ? req.body.galleryImages : (events[i].galleryImages || []),
-  };
+    id: prev.id,
+    galleryImages: Array.isArray(req.body.galleryImages) ? req.body.galleryImages : prev.galleryImages || [],
+  });
+  saveEvents();
   res.json(events[i]);
 });
 
 app.delete('/api/admin/events/:id', (req, res) => {
+  const ev = events.find((x) => x.id === req.params.id);
+  if (ev) {
+    safeUnlinkUploadUrl(ev.imageUrl);
+    (ev.galleryImages || []).forEach(safeUnlinkUploadUrl);
+  }
   events = events.filter((x) => x.id !== req.params.id);
+  saveEvents();
   res.status(204).end();
 });
 
-// Admin routes (no auth check for dev)
 app.put('/api/admin/about', (req, res) => {
   const lang = req.body?.lang;
   if (!ABOUT_LANGS.includes(lang)) {
@@ -169,14 +231,14 @@ app.put('/api/admin/about', (req, res) => {
   const title = req.body.title != null ? String(req.body.title) : '';
   const subtitle = req.body.subtitle != null ? String(req.body.subtitle) : '';
   const body = req.body.body != null ? String(req.body.body) : '';
-  // Only replace this language; en / hy / ru stay independent
   aboutByLang[lang] = { title, subtitle, body };
   saveAboutToDisk();
   res.json(aboutByLang);
 });
 
 app.put('/api/admin/students-page', (req, res) => {
-  studentsPage = { ...studentsPage, ...req.body };
+  studentsPage = normalizeStudentsPage({ ...studentsPage, ...req.body });
+  saveStudentsPage();
   res.json(studentsPage);
 });
 
@@ -184,29 +246,46 @@ const ANNOUNCEMENT_TYPES = ['vacancies', 'admission'];
 app.post('/api/admin/announcements', (req, res) => {
   const id = String(Date.now());
   const type = ANNOUNCEMENT_TYPES.includes(req.body?.type) ? req.body.type : 'vacancies';
-  const item = {
+  const item = normalizeAnnouncement({
     id,
-    ...req.body,
+    title: req.body?.title ?? '',
+    summary: req.body?.summary ?? '',
+    content: req.body?.content ?? '',
+    publishedAt: req.body?.publishedAt || new Date().toISOString().slice(0, 10),
     type,
-    publishedAt: req.body.publishedAt || new Date().toISOString().slice(0, 10),
-  };
+    pdfUrl: req.body?.pdfUrl ?? '',
+    pdfMeta: req.body?.pdfMeta,
+  });
   announcements.push(item);
+  saveAnnouncements();
   res.status(201).json(item);
 });
 
 app.put('/api/admin/announcements/:id', (req, res) => {
   const i = announcements.findIndex((x) => x.id === req.params.id);
   if (i === -1) return res.status(404).json({ error: 'Announcement not found' });
+  const prev = announcements[i];
   const type =
     req.body?.type && ANNOUNCEMENT_TYPES.includes(req.body.type)
       ? req.body.type
       : announcements[i].type || 'vacancies';
-  announcements[i] = { ...announcements[i], ...req.body, type };
+  const nextPdf = req.body.pdfUrl !== undefined ? req.body.pdfUrl : prev.pdfUrl;
+  if (nextPdf !== prev.pdfUrl) safeUnlinkUploadUrl(prev.pdfUrl);
+  announcements[i] = normalizeAnnouncement({
+    ...prev,
+    ...req.body,
+    type,
+    id: prev.id,
+  });
+  saveAnnouncements();
   res.json(announcements[i]);
 });
 
 app.delete('/api/admin/announcements/:id', (req, res) => {
+  const item = announcements.find((x) => x.id === req.params.id);
+  if (item) safeUnlinkUploadUrl(item.pdfUrl);
   announcements = announcements.filter((x) => x.id !== req.params.id);
+  saveAnnouncements();
   res.status(204).end();
 });
 
@@ -214,55 +293,108 @@ const DOC_TYPES = ['budgets', 'purchases', 'licenses', 'other'];
 app.post('/api/admin/reports', (req, res) => {
   const id = String(Date.now());
   const type = DOC_TYPES.includes(req.body?.type) ? req.body.type : 'other';
-  const report = {
+  const report = normalizeReport({
     id,
-    ...req.body,
+    title: req.body?.title ?? '',
+    summary: req.body?.summary ?? '',
+    content: req.body?.content ?? '',
+    publishedAt: req.body?.publishedAt || new Date().toISOString().slice(0, 10),
     type,
-    publishedAt: req.body.publishedAt || new Date().toISOString().slice(0, 10),
-  };
+    pdfUrl: req.body?.pdfUrl ?? '',
+    pdfMeta: req.body?.pdfMeta,
+  });
   reports.push(report);
+  saveReports();
   res.status(201).json(report);
 });
 
 app.put('/api/admin/reports/:id', (req, res) => {
   const i = reports.findIndex((x) => x.id === req.params.id);
   if (i === -1) return res.status(404).json({ error: 'Report not found' });
+  const prev = reports[i];
   const type = req.body?.type && DOC_TYPES.includes(req.body.type) ? req.body.type : reports[i].type || 'other';
-  reports[i] = { ...reports[i], ...req.body, type };
+  const nextPdf = req.body.pdfUrl !== undefined ? req.body.pdfUrl : prev.pdfUrl;
+  if (nextPdf !== prev.pdfUrl) safeUnlinkUploadUrl(prev.pdfUrl);
+  reports[i] = normalizeReport({
+    ...prev,
+    ...req.body,
+    type,
+    id: prev.id,
+  });
+  saveReports();
   res.json(reports[i]);
 });
 
 app.delete('/api/admin/reports/:id', (req, res) => {
+  const r = reports.find((x) => x.id === req.params.id);
+  if (r) safeUnlinkUploadUrl(r.pdfUrl);
   reports = reports.filter((x) => x.id !== req.params.id);
+  saveReports();
   res.status(204).end();
 });
 
 app.post('/api/admin/teachers', (req, res) => {
   const id = String(Date.now());
-  const teacher = { id, ...req.body };
+  const teacher = normalizeTeacher({
+    id,
+    name: req.body?.name ?? '',
+    subject: req.body?.subject ?? '',
+    bio: req.body?.bio ?? '',
+    email: req.body?.email ?? '',
+    photoUrl: req.body?.photoUrl ?? '',
+  });
   teachers.push(teacher);
+  saveTeachers();
   res.status(201).json(teacher);
 });
 
 app.put('/api/admin/teachers/:id', (req, res) => {
   const i = teachers.findIndex((x) => x.id === req.params.id);
   if (i === -1) return res.status(404).json({ error: 'Teacher not found' });
-  teachers[i] = { ...teachers[i], ...req.body };
+  const prev = teachers[i];
+  const nextPhoto = req.body.photoUrl !== undefined ? req.body.photoUrl : prev.photoUrl;
+  if (nextPhoto !== prev.photoUrl) safeUnlinkUploadUrl(prev.photoUrl);
+  teachers[i] = normalizeTeacher({ ...prev, ...req.body, id: prev.id });
+  saveTeachers();
   res.json(teachers[i]);
 });
 
 app.delete('/api/admin/teachers/:id', (req, res) => {
+  const te = teachers.find((x) => x.id === req.params.id);
+  if (te) safeUnlinkUploadUrl(te.photoUrl);
   teachers = teachers.filter((x) => x.id !== req.params.id);
+  saveTeachers();
   res.status(204).end();
 });
 
-// 404 for any other /api request (helps debug missing routes)
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Not found', path: req.path, method: req.method });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`API server running at http://localhost:${PORT}`);
+/** Production: serve Vite build + SPA fallback (same origin as /api — works on your own server / static IP). */
+const DIST_DIR = path.join(__dirname, '..', 'dist');
+const INDEX_HTML = path.join(DIST_DIR, 'index.html');
+if (fs.existsSync(INDEX_HTML)) {
+  app.use(express.static(DIST_DIR, { index: false, maxAge: '1h' }));
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(INDEX_HTML);
+  });
+} else {
+  console.warn(
+    '[school] No dist/index.html — run `npm run build` in client/ to serve the website, or use `npm run dev:full` for development.'
+  );
+}
+
+const HOST = process.env.HOST || '0.0.0.0';
+const server = app.listen(PORT, HOST, () => {
+  console.log(`Server listening on http://${HOST}:${PORT}`);
+  if (fs.existsSync(INDEX_HTML)) {
+    console.log(`Serving SPA from ${DIST_DIR}`);
+  }
+  console.log(`Data JSON: ${path.join(__dirname, 'data')}`);
+  console.log(`Uploads:   ${UPLOADS_ROOT} (pdfs/, images/)`);
 });
 
 server.on('error', (err) => {

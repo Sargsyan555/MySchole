@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { IconMegaphone } from '../components/SiteIcons';
 import styles from './Documents.module.css';
 
 const TYPES = ['vacancies', 'admission'] as const;
@@ -27,7 +28,9 @@ export default function Announcements() {
         {TYPES.map((type) => (
           <li key={type}>
             <Link to={`/announcements/${type}`} className={styles.categoryCard}>
-              <span className={styles.categoryIcon}>📢</span>
+              <span className={styles.categoryIcon}>
+                <IconMegaphone />
+              </span>
               <span className={styles.categoryTitle}>{t(titleKeys[type])}</span>
               <span className={styles.categoryIntro}>{t(introKeys[type])}</span>
             </Link>

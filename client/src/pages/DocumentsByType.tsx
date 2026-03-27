@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDocuments } from '../hooks/useDocuments';
+import { IconFileText } from '../components/SiteIcons';
 import styles from './DocumentsByType.module.css';
 
 const DOCUMENT_TYPES = ['budgets', 'purchases', 'licenses', 'other'] as const;
@@ -68,7 +69,9 @@ export default function DocumentsByType() {
                   rel="noreferrer"
                   className={styles.pdfCard}
                 >
-                  <span className={styles.pdfIcon}>📄</span>
+                  <span className={styles.pdfIcon}>
+                    <IconFileText />
+                  </span>
                   <span className={styles.pdfTitle}>{doc.title}</span>
                   {doc.summary && (
                     <span className={styles.pdfSummary}>{doc.summary}</span>

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useReports, PDF_FALLBACK_URL_EXPORT } from '../hooks/useReports';
+import { IconFileText } from '../components/SiteIcons';
 import styles from './Reports.module.css';
 
 export default function Reports() {
@@ -21,7 +22,9 @@ export default function Reports() {
           const href = r.pdfUrl ?? PDF_FALLBACK_URL_EXPORT;
           const cardContent = (
             <>
-              <span className={styles.pdfIcon}>📄</span>
+              <span className={styles.pdfIcon}>
+                <IconFileText />
+              </span>
               <span className={styles.pdfTitle}>{r.title}</span>
               {r.summary && <span className={styles.pdfSummary}>{r.summary}</span>}
               <span className={styles.pdfLabel}>

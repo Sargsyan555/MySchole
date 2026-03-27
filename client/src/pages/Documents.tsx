@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { IconFileText } from '../components/SiteIcons';
 import styles from './Documents.module.css';
 
 const DOCUMENT_TYPES = ['budgets', 'purchases', 'licenses', 'other'] as const;
@@ -31,7 +32,9 @@ export default function Documents() {
         {DOCUMENT_TYPES.map((type) => (
           <li key={type}>
             <Link to={`/documents/${type}`} className={styles.categoryCard}>
-              <span className={styles.categoryIcon}>📄</span>
+              <span className={styles.categoryIcon}>
+                <IconFileText />
+              </span>
               <span className={styles.categoryTitle}>{t(titleKeys[type])}</span>
               <span className={styles.categoryIntro}>{t(introKeys[type])}</span>
             </Link>

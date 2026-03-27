@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useReports } from '../hooks/useReports';
 import { useEvents } from '../hooks/useEvents';
 import { EventsSection } from '../components/EventsSection';
+import { IconCalendar, IconFileText, IconGraduationCap, IconSchool } from '../components/SiteIcons';
 import styles from './Home.module.css';
 
 export default function Home() {
@@ -17,7 +18,7 @@ export default function Home() {
         <div className={styles.hero}>
           <img
             className={styles.heroMedia}
-            src="https://haykadzor.schoolsite.am/wp-content/uploads/sites/872/2016/12/cropped-20170119_111008-e1484810760105-5.jpg"
+            src="/public/images/school.jpg"
             alt="School"
             loading="eager"
           />
@@ -37,22 +38,30 @@ export default function Home() {
       </section>
       <section className={styles.cards}>
         <Link to="/my-school/about" className={styles.card}>
-          <span className={styles.cardIcon}>🏫</span>
+          <span className={styles.cardIcon}>
+            <IconSchool />
+          </span>
           <h3>{t('home.cardAboutTitle')}</h3>
           <p>{t('home.cardAboutBody')}</p>
         </Link>
         <Link to="/documents" className={styles.card}>
-          <span className={styles.cardIcon}>📄</span>
+          <span className={styles.cardIcon}>
+            <IconFileText />
+          </span>
           <h3>{t('home.cardDocumentsTitle')}</h3>
           <p>{t('home.cardDocumentsBody')}</p>
         </Link>
         <Link to="/my-school/staff" className={styles.card}>
-          <span className={styles.cardIcon}>👩‍🏫</span>
+          <span className={styles.cardIcon}>
+            <IconGraduationCap />
+          </span>
           <h3>{t('home.cardTeachersTitle')}</h3>
           <p>{t('home.cardTeachersBody')}</p>
         </Link>
         <Link to="/my-school/events" className={styles.card}>
-          <span className={styles.cardIcon}>📅</span>
+          <span className={styles.cardIcon}>
+            <IconCalendar />
+          </span>
           <h3>{t('home.cardEventsTitle')}</h3>
           <p>{t('home.cardEventsBody')}</p>
         </Link>
@@ -115,7 +124,9 @@ export default function Home() {
                   rel="noreferrer"
                   className={styles.pdfCard}
                 >
-                  <span className={styles.pdfIcon}>📄</span>
+                  <span className={styles.pdfIcon}>
+                    <IconFileText />
+                  </span>
                   <span className={styles.pdfTitle}>{r.title}</span>
                   <span className={styles.pdfLabel}>{t('home.openPdf')}</span>
                 </a>

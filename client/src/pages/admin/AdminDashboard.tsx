@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
+import { IconFileText, IconPaperclip } from '../../components/SiteIcons';
 import * as api from '../../api';
 import { ABOUT_LANGS, type AboutByLang, type AboutLang } from '../../api';
 import styles from './Admin.module.css';
@@ -477,7 +478,6 @@ export default function AdminDashboard() {
       <div className={styles.topBar}>
         <div className={styles.topBarText}>
           <h1>{t('adminDashboard.title')}</h1>
-          <p className={styles.topBarLead}>{t('adminDashboard.dashboardLead')}</p>
         </div>
         <div className={styles.actions}>
           <Link to="/" className={styles.viewSiteBtn}>
@@ -737,7 +737,9 @@ export default function AdminDashboard() {
                       disabled={uploadingPdf}
                       className={styles.uploadInputHidden}
                     />
-                    <span className={styles.uploadZoneIcon}>📄</span>
+                    <span className={styles.uploadZoneIcon}>
+                      <IconFileText />
+                    </span>
                     <span className={styles.uploadZoneText}>{t('adminDashboard.choosePdf')}</span>
                   </label>
                   {uploadingPdf && <span className={styles.uploading}>{t('adminDashboard.uploading')}</span>}
@@ -867,7 +869,9 @@ export default function AdminDashboard() {
                       disabled={uploadingPdf}
                       className={styles.uploadInputHidden}
                     />
-                    <span className={styles.uploadZoneIcon}>📎</span>
+                    <span className={styles.uploadZoneIcon}>
+                      <IconPaperclip />
+                    </span>
                     <span className={styles.uploadZoneText}>{t('adminDashboard.choosePdf')}</span>
                   </label>
                   {uploadingPdf && <span className={styles.uploading}>{t('adminDashboard.uploading')}</span>}

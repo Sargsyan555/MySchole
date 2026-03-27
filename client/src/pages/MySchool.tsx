@@ -1,13 +1,25 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import {
+  IconBookOpen,
+  IconCalendar,
+  IconGraduationCap,
+  IconSchool,
+  type SiteIconComponent,
+} from '../components/SiteIcons';
 import styles from './Documents.module.css';
 
-const LINKS = [
-  { to: '/my-school/staff', titleKey: 'mySchool.staff', introKey: 'mySchool.staffIntro' },
-  { to: '/my-school/students', titleKey: 'mySchool.students', introKey: 'mySchool.studentsIntro' },
-  { to: '/my-school/about', titleKey: 'mySchool.aboutUs', introKey: 'mySchool.aboutUsIntro' },
-  { to: '/my-school/events', titleKey: 'mySchool.events', introKey: 'mySchool.eventsIntro' },
-] as const;
+const LINKS: readonly {
+  to: string;
+  titleKey: 'mySchool.staff' | 'mySchool.students' | 'mySchool.aboutUs' | 'mySchool.events';
+  introKey: 'mySchool.staffIntro' | 'mySchool.studentsIntro' | 'mySchool.aboutUsIntro' | 'mySchool.eventsIntro';
+  Icon: SiteIconComponent;
+}[] = [
+  { to: '/my-school/staff', titleKey: 'mySchool.staff', introKey: 'mySchool.staffIntro', Icon: IconGraduationCap },
+  { to: '/my-school/students', titleKey: 'mySchool.students', introKey: 'mySchool.studentsIntro', Icon: IconBookOpen },
+  { to: '/my-school/about', titleKey: 'mySchool.aboutUs', introKey: 'mySchool.aboutUsIntro', Icon: IconSchool },
+  { to: '/my-school/events', titleKey: 'mySchool.events', introKey: 'mySchool.eventsIntro', Icon: IconCalendar },
+];
 
 export default function MySchool() {
   const { t } = useTranslation();
@@ -19,12 +31,14 @@ export default function MySchool() {
         <p className={styles.sectionSubtitle}>{t('mySchool.intro')}</p>
       </div>
       <ul className={styles.categoryGrid}>
-        {LINKS.map((item) => (
-          <li key={item.to}>
-            <Link to={item.to} className={styles.categoryCard}>
-              <span className={styles.categoryIcon}>🏫</span>
-              <span className={styles.categoryTitle}>{t(item.titleKey)}</span>
-              <span className={styles.categoryIntro}>{t(item.introKey)}</span>
+        {LINKS.map(({ to, titleKey, introKey, Icon }) => (
+          <li key={to}>
+            <Link to={to} className={styles.categoryCard}>
+              <span className={styles.categoryIcon}>
+                <Icon />
+              </span>
+              <span className={styles.categoryTitle}>{t(titleKey)}</span>
+              <span className={styles.categoryIntro}>{t(introKey)}</span>
             </Link>
           </li>
         ))}

@@ -59,9 +59,20 @@
 }
 
 .categoryIcon {
-  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
   margin-bottom: 0.75rem;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  color: var(--color-primary);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+  flex-shrink: 0;
+}
+
+.categoryIcon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .categoryTitle {

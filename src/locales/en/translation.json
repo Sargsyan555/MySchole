@@ -135,7 +135,8 @@
   },
   "adminLogin": {
     "title": "Admin Login",
-    "hint": "Enter the admin password to manage the site.",
+    "hint": "Sign in with the admin email and password configured on the server.",
+    "emailPlaceholder": "Email",
     "passwordPlaceholder": "Password",
     "loginFailed": "Login failed",
     "loggingIn": "Logging in…",

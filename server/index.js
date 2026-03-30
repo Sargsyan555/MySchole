@@ -1,7 +1,9 @@
+import dotenv from 'dotenv';
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
 import {
   DATA_FILES,
@@ -20,12 +22,41 @@ import {
   normalizeTeacher,
   normalizeEvent,
 } from './persistence.js';
+import {
+  requireAdmin,
+  handleAdminLogin,
+  handleAdminLogout,
+  handleAdminSession,
+} from './auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 
-const ADMIN_PASSWORD = 'admin';
+const JWT_SECRET =
+  process.env.JWT_SECRET || 'dev-only-set-JWT_SECRET-in-env-for-anything-real';
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+  console.error('FATAL: set JWT_SECRET in production');
+  process.exit(1);
+} else if (!process.env.JWT_SECRET) {
+  console.warn('[auth] JWT_SECRET not set — using insecure dev default');
+}
+
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@school.local').toLowerCase().trim();
+const passwordHash = process.env.ADMIN_PASSWORD_HASH?.trim();
+const plainPassword = passwordHash ? undefined : (process.env.ADMIN_PASSWORD ?? 'admin');
+if (!passwordHash) {
+  console.warn('[auth] ADMIN_PASSWORD_HASH not set — using ADMIN_PASSWORD or default "admin" (dev only)');
+}
+
+const loginAuthOpts = {
+  jwtSecret: JWT_SECRET,
+  adminEmail: ADMIN_EMAIL,
+  passwordHash: passwordHash || undefined,
+  plainPassword,
+};
 
 ensureDirs();
 
@@ -48,39 +79,11 @@ const imageStorage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 const uploadImage = multer({ storage: imageStorage, limits: { fileSize: 5 * 1024 * 1024 } });
 
+app.use(cookieParser());
 app.use(express.json());
-
-app.post('/api/admin/upload-pdf', upload.single('pdf'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  const rel = `pdfs/${req.file.filename}`;
-  const url = `/api/uploads/${rel}`;
-  const uploadedAt = new Date().toISOString();
-  res.json({
-    url,
-    storedFileName: req.file.filename,
-    originalName: req.file.originalname || '',
-    subpath: rel,
-    uploadedAt,
-  });
-});
-
-app.post('/api/admin/upload-image', uploadImage.single('image'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
-  const rel = `images/${req.file.filename}`;
-  const url = `/api/uploads/${rel}`;
-  const uploadedAt = new Date().toISOString();
-  res.json({
-    url,
-    storedFileName: req.file.filename,
-    originalName: req.file.originalname || '',
-    subpath: rel,
-    uploadedAt,
-  });
-});
 
 app.use('/api/uploads', express.static(UPLOADS_ROOT));
 
-// About — same file as before
 const emptyAboutBlock = () => ({ title: '', subtitle: '', body: '' });
 const ABOUT_LANGS = ['en', 'hy', 'ru'];
 const ABOUT_DATA_FILE = path.join(__dirname, 'data', 'about.json');
@@ -157,15 +160,45 @@ app.get('/api/reports/:id', (req, res) => {
 app.get('/api/teachers', (req, res) => res.json(teachers));
 app.get('/api/events', (req, res) => res.json(events));
 
-app.post('/api/admin/login', (req, res) => {
-  const { password } = req.body || {};
-  if (password !== ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'Invalid password' });
-  }
-  res.json({ ok: true });
+app.post('/api/admin/login', (req, res) => handleAdminLogin(req, res, loginAuthOpts));
+app.get('/api/admin/session', (req, res) => handleAdminSession(req, res, JWT_SECRET));
+app.post('/api/admin/logout', handleAdminLogout);
+
+const ANNOUNCEMENT_TYPES = ['vacancies', 'admission'];
+const DOC_TYPES = ['budgets', 'purchases', 'licenses', 'other'];
+
+const adminRouter = express.Router();
+adminRouter.use(requireAdmin(JWT_SECRET));
+
+adminRouter.post('/upload-pdf', upload.single('pdf'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  const rel = `pdfs/${req.file.filename}`;
+  const url = `/api/uploads/${rel}`;
+  const uploadedAt = new Date().toISOString();
+  res.json({
+    url,
+    storedFileName: req.file.filename,
+    originalName: req.file.originalname || '',
+    subpath: rel,
+    uploadedAt,
+  });
 });
 
-app.post('/api/admin/events', (req, res) => {
+adminRouter.post('/upload-image', uploadImage.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+  const rel = `images/${req.file.filename}`;
+  const url = `/api/uploads/${rel}`;
+  const uploadedAt = new Date().toISOString();
+  res.json({
+    url,
+    storedFileName: req.file.filename,
+    originalName: req.file.originalname || '',
+    subpath: rel,
+    uploadedAt,
+  });
+});
+
+adminRouter.post('/events', (req, res) => {
   const id = String(Date.now());
   const event = normalizeEvent({
     id,
@@ -181,15 +214,13 @@ app.post('/api/admin/events', (req, res) => {
   res.status(201).json(event);
 });
 
-app.put('/api/admin/events/:id', (req, res) => {
+adminRouter.put('/events/:id', (req, res) => {
   const i = events.findIndex((x) => x.id === req.params.id);
   if (i === -1) return res.status(404).json({ error: 'Event not found' });
   const prev = events[i];
   const nextImage = req.body.imageUrl !== undefined ? req.body.imageUrl : prev.imageUrl;
   const nextGallery =
-    req.body.galleryImages !== undefined
-      ? req.body.galleryImages
-      : prev.galleryImages || [];
+    req.body.galleryImages !== undefined ? req.body.galleryImages : prev.galleryImages || [];
   if (nextImage !== prev.imageUrl) safeUnlinkUploadUrl(prev.imageUrl);
   if (Array.isArray(prev.galleryImages)) {
     const removed = prev.galleryImages.filter((u) => !nextGallery.includes(u));
@@ -205,7 +236,7 @@ app.put('/api/admin/events/:id', (req, res) => {
   res.json(events[i]);
 });
 
-app.delete('/api/admin/events/:id', (req, res) => {
+adminRouter.delete('/events/:id', (req, res) => {
   const ev = events.find((x) => x.id === req.params.id);
   if (ev) {
     safeUnlinkUploadUrl(ev.imageUrl);
@@ -216,7 +247,7 @@ app.delete('/api/admin/events/:id', (req, res) => {
   res.status(204).end();
 });
 
-app.put('/api/admin/about', (req, res) => {
+adminRouter.put('/about', (req, res) => {
   const lang = req.body?.lang;
   if (!ABOUT_LANGS.includes(lang)) {
     return res.status(400).json({ error: 'Invalid or missing lang (en, hy, ru)' });
@@ -229,8 +260,7 @@ app.put('/api/admin/about', (req, res) => {
   res.json(aboutByLang);
 });
 
-const ANNOUNCEMENT_TYPES = ['vacancies', 'admission'];
-app.post('/api/admin/announcements', (req, res) => {
+adminRouter.post('/announcements', (req, res) => {
   const id = String(Date.now());
   const type = ANNOUNCEMENT_TYPES.includes(req.body?.type) ? req.body.type : 'vacancies';
   const item = normalizeAnnouncement({
@@ -248,7 +278,7 @@ app.post('/api/admin/announcements', (req, res) => {
   res.status(201).json(item);
 });
 
-app.put('/api/admin/announcements/:id', (req, res) => {
+adminRouter.put('/announcements/:id', (req, res) => {
   const i = announcements.findIndex((x) => x.id === req.params.id);
   if (i === -1) return res.status(404).json({ error: 'Announcement not found' });
   const prev = announcements[i];
@@ -268,7 +298,7 @@ app.put('/api/admin/announcements/:id', (req, res) => {
   res.json(announcements[i]);
 });
 
-app.delete('/api/admin/announcements/:id', (req, res) => {
+adminRouter.delete('/announcements/:id', (req, res) => {
   const item = announcements.find((x) => x.id === req.params.id);
   if (item) safeUnlinkUploadUrl(item.pdfUrl);
   announcements = announcements.filter((x) => x.id !== req.params.id);
@@ -276,8 +306,7 @@ app.delete('/api/admin/announcements/:id', (req, res) => {
   res.status(204).end();
 });
 
-const DOC_TYPES = ['budgets', 'purchases', 'licenses', 'other'];
-app.post('/api/admin/reports', (req, res) => {
+adminRouter.post('/reports', (req, res) => {
   const id = String(Date.now());
   const type = DOC_TYPES.includes(req.body?.type) ? req.body.type : 'other';
   const report = normalizeReport({
@@ -295,7 +324,7 @@ app.post('/api/admin/reports', (req, res) => {
   res.status(201).json(report);
 });
 
-app.put('/api/admin/reports/:id', (req, res) => {
+adminRouter.put('/reports/:id', (req, res) => {
   const i = reports.findIndex((x) => x.id === req.params.id);
   if (i === -1) return res.status(404).json({ error: 'Report not found' });
   const prev = reports[i];
@@ -312,7 +341,7 @@ app.put('/api/admin/reports/:id', (req, res) => {
   res.json(reports[i]);
 });
 
-app.delete('/api/admin/reports/:id', (req, res) => {
+adminRouter.delete('/reports/:id', (req, res) => {
   const r = reports.find((x) => x.id === req.params.id);
   if (r) safeUnlinkUploadUrl(r.pdfUrl);
   reports = reports.filter((x) => x.id !== req.params.id);
@@ -320,7 +349,7 @@ app.delete('/api/admin/reports/:id', (req, res) => {
   res.status(204).end();
 });
 
-app.post('/api/admin/teachers', (req, res) => {
+adminRouter.post('/teachers', (req, res) => {
   const id = String(Date.now());
   const teacher = normalizeTeacher({
     id,
@@ -335,7 +364,7 @@ app.post('/api/admin/teachers', (req, res) => {
   res.status(201).json(teacher);
 });
 
-app.put('/api/admin/teachers/:id', (req, res) => {
+adminRouter.put('/teachers/:id', (req, res) => {
   const i = teachers.findIndex((x) => x.id === req.params.id);
   if (i === -1) return res.status(404).json({ error: 'Teacher not found' });
   const prev = teachers[i];
@@ -346,7 +375,7 @@ app.put('/api/admin/teachers/:id', (req, res) => {
   res.json(teachers[i]);
 });
 
-app.delete('/api/admin/teachers/:id', (req, res) => {
+adminRouter.delete('/teachers/:id', (req, res) => {
   const te = teachers.find((x) => x.id === req.params.id);
   if (te) safeUnlinkUploadUrl(te.photoUrl);
   teachers = teachers.filter((x) => x.id !== req.params.id);
@@ -354,12 +383,15 @@ app.delete('/api/admin/teachers/:id', (req, res) => {
   res.status(204).end();
 });
 
+app.use('/api/admin', adminRouter);
+
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Not found', path: req.path, method: req.method });
 });
 
 const server = app.listen(PORT, () => {
   console.log(`API server running at http://localhost:${PORT}`);
+  console.log(`Admin email: ${ADMIN_EMAIL}`);
   console.log(`Data JSON: ${path.join(__dirname, 'data')}`);
   console.log(`Uploads:   ${UPLOADS_ROOT} (pdfs/, images/)`);
 });

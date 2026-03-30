@@ -1,5 +1,11 @@
 const API = '/api';
 
+/** Same-origin API calls; sends httpOnly session cookie for admin routes. */
+function fetchApi(path: string, init: RequestInit = {}) {
+  const p = path.startsWith('/') ? path : `/${path}`;
+  return fetch(`${API}${p}`, { credentials: 'include', ...init });
+}
+
 export type AboutLang = 'en' | 'hy' | 'ru';
 export type AboutBlock = { title: string; subtitle: string; body: string };
 export type AboutByLang = Record<AboutLang, AboutBlock>;
@@ -34,13 +40,13 @@ export function normalizeAboutResponse(raw: unknown): AboutByLang {
 }
 
 export async function getAbout(): Promise<AboutByLang> {
-  const r = await fetch(`${API}/about`);
+  const r = await fetchApi('/about');
   if (!r.ok) throw new Error('Failed to load about');
   return r.json();
 }
 
 export async function updateAbout(lang: AboutLang, data: AboutBlock): Promise<AboutByLang> {
-  const r = await fetch(`${API}/admin/about`, {
+  const r = await fetchApi('/admin/about', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ lang, title: data.title, subtitle: data.subtitle, body: data.body }),
@@ -50,40 +56,40 @@ export async function updateAbout(lang: AboutLang, data: AboutBlock): Promise<Ab
 }
 
 export async function getReports() {
-  const r = await fetch(`${API}/reports`);
+  const r = await fetchApi('/reports');
   if (!r.ok) throw new Error('Failed to load reports');
   return r.json();
 }
 
 export async function getReport(id: string) {
-  const r = await fetch(`${API}/reports/${id}`);
+  const r = await fetchApi(`/reports/${id}`);
   if (!r.ok) throw new Error('Report not found');
   return r.json();
 }
 
 export async function getTeachers() {
-  const r = await fetch(`${API}/teachers`);
+  const r = await fetchApi('/teachers');
   if (!r.ok) throw new Error('Failed to load teachers');
   return r.json();
 }
 
 export async function getEvents() {
-  const r = await fetch(`${API}/events`);
+  const r = await fetchApi('/events');
   if (!r.ok) throw new Error('Failed to load events');
   return r.json();
 }
 
 export async function getAnnouncements() {
-  const r = await fetch(`${API}/announcements`);
+  const r = await fetchApi('/announcements');
   if (!r.ok) throw new Error('Failed to load announcements');
   return r.json();
 }
 
-export async function adminLogin(password: string) {
-  const r = await fetch(`${API}/admin/login`, {
+export async function adminLogin(email: string, password: string) {
+  const r = await fetchApi('/admin/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ email, password }),
   });
   if (!r.ok) {
     const d = await r.json().catch(() => ({}));
@@ -92,10 +98,22 @@ export async function adminLogin(password: string) {
   return r.json();
 }
 
+export async function getAdminSession() {
+  const r = await fetchApi('/admin/session');
+  if (!r.ok) throw new Error('Unauthorized');
+  return r.json() as Promise<{ ok: boolean }>;
+}
+
+export async function adminLogout() {
+  const r = await fetchApi('/admin/logout', { method: 'POST' });
+  if (!r.ok) throw new Error('Logout failed');
+  return r.json();
+}
+
 export async function uploadPdf(file: File): Promise<{ url: string }> {
   const formData = new FormData();
   formData.append('pdf', file);
-  const r = await fetch(`${API}/admin/upload-pdf`, { method: 'POST', body: formData });
+  const r = await fetchApi('/admin/upload-pdf', { method: 'POST', body: formData });
   if (!r.ok) {
     const d = await r.json().catch(() => ({}));
     throw new Error((d as { error?: string }).error || 'Upload failed');
@@ -106,7 +124,7 @@ export async function uploadPdf(file: File): Promise<{ url: string }> {
 export async function uploadImage(file: File): Promise<{ url: string }> {
   const formData = new FormData();
   formData.append('image', file);
-  const r = await fetch(`${API}/admin/upload-image`, { method: 'POST', body: formData });
+  const r = await fetchApi('/admin/upload-image', { method: 'POST', body: formData });
   if (!r.ok) {
     const d = await r.json().catch(() => ({}));
     throw new Error((d as { error?: string }).error || 'Upload failed');
@@ -124,7 +142,7 @@ export type EventPayload = {
 };
 
 export async function createEvent(data: EventPayload) {
-  const r = await fetch(`${API}/admin/events`, {
+  const r = await fetchApi('/admin/events', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -134,7 +152,7 @@ export async function createEvent(data: EventPayload) {
 }
 
 export async function updateEvent(id: string, data: Partial<EventPayload>) {
-  const r = await fetch(`${API}/admin/events/${id}`, {
+  const r = await fetchApi(`/admin/events/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -144,7 +162,7 @@ export async function updateEvent(id: string, data: Partial<EventPayload>) {
 }
 
 export async function deleteEvent(id: string) {
-  const r = await fetch(`${API}/admin/events/${id}`, { method: 'DELETE' });
+  const r = await fetchApi(`/admin/events/${id}`, { method: 'DELETE' });
   if (!r.ok) throw new Error('Failed to delete event');
 }
 
@@ -158,7 +176,7 @@ export async function createAnnouncement(data: {
   pdfUrl?: string;
   type?: AnnouncementType;
 }) {
-  const r = await fetch(`${API}/admin/announcements`, {
+  const r = await fetchApi('/admin/announcements', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -178,7 +196,7 @@ export async function updateAnnouncement(
     type: AnnouncementType;
   }>
 ) {
-  const r = await fetch(`${API}/admin/announcements/${id}`, {
+  const r = await fetchApi(`/admin/announcements/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -188,7 +206,7 @@ export async function updateAnnouncement(
 }
 
 export async function deleteAnnouncement(id: string) {
-  const r = await fetch(`${API}/admin/announcements/${id}`, { method: 'DELETE' });
+  const r = await fetchApi(`/admin/announcements/${id}`, { method: 'DELETE' });
   if (!r.ok) throw new Error('Failed to delete announcement');
 }
 
@@ -201,7 +219,7 @@ export async function createReport(data: {
   pdfUrl?: string;
   type?: DocumentType;
 }) {
-  const r = await fetch(`${API}/admin/reports`, {
+  const r = await fetchApi('/admin/reports', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -214,7 +232,7 @@ export async function updateReport(
   id: string,
   data: Partial<{ title: string; summary: string; content: string; publishedAt: string; pdfUrl: string; type: DocumentType }>
 ) {
-  const r = await fetch(`${API}/admin/reports/${id}`, {
+  const r = await fetchApi(`/admin/reports/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -224,12 +242,12 @@ export async function updateReport(
 }
 
 export async function deleteReport(id: string) {
-  const r = await fetch(`${API}/admin/reports/${id}`, { method: 'DELETE' });
+  const r = await fetchApi(`/admin/reports/${id}`, { method: 'DELETE' });
   if (!r.ok) throw new Error('Failed to delete report');
 }
 
 export async function createTeacher(data: { name: string; subject: string; bio: string; email: string }) {
-  const r = await fetch(`${API}/admin/teachers`, {
+  const r = await fetchApi('/admin/teachers', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -239,7 +257,7 @@ export async function createTeacher(data: { name: string; subject: string; bio: 
 }
 
 export async function updateTeacher(id: string, data: Partial<{ name: string; subject: string; bio: string; email: string }>) {
-  const r = await fetch(`${API}/admin/teachers/${id}`, {
+  const r = await fetchApi(`/admin/teachers/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -249,6 +267,6 @@ export async function updateTeacher(id: string, data: Partial<{ name: string; su
 }
 
 export async function deleteTeacher(id: string) {
-  const r = await fetch(`${API}/admin/teachers/${id}`, { method: 'DELETE' });
+  const r = await fetchApi(`/admin/teachers/${id}`, { method: 'DELETE' });
   if (!r.ok) throw new Error('Failed to delete teacher');
 }

@@ -6,6 +6,7 @@ import styles from './Admin.module.css';
 
 export default function AdminLogin() {
   const { t } = useTranslation();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,8 +17,7 @@ export default function AdminLogin() {
     setError('');
     setLoading(true);
     try {
-      await adminLogin(password);
-      sessionStorage.setItem('admin', '1');
+      await adminLogin(email.trim(), password);
       navigate('/admin/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('adminLogin.loginFailed'));
@@ -33,11 +33,20 @@ export default function AdminLogin() {
         <p className={styles.hint}>{t('adminLogin.hint')}</p>
         <form onSubmit={handleSubmit}>
           <input
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t('adminLogin.emailPlaceholder')}
+            autoFocus
+            disabled={loading}
+          />
+          <input
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={t('adminLogin.passwordPlaceholder')}
-            autoFocus
             disabled={loading}
           />
           {error && <p className={styles.error}>{error}</p>}

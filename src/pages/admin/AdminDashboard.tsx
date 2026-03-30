@@ -131,23 +131,38 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    const ok = sessionStorage.getItem('admin');
-    if (!ok) {
-      navigate('/admin');
-      return;
-    }
-    Promise.all([
-      api.getAbout().then((d) => setAboutByLang(api.normalizeAboutResponse(d))),
-      fetch('/api/reports').then((r) => r.json()).then(setReports),
-      api
-        .getAnnouncements()
-        .then((data: Announcement[]) => setAnnouncements(Array.isArray(data) ? data : []))
-        .catch(() => setAnnouncements([])),
-      api.getTeachers().then(setTeachers),
-      api.getEvents().then((data: Event[]) => setEvents(Array.isArray(data) ? data : [])),
-    ])
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      try {
+        await api.getAdminSession();
+      } catch {
+        if (!cancelled) {
+          setLoading(false);
+          navigate('/admin');
+        }
+        return;
+      }
+      if (cancelled) return;
+      try {
+        await Promise.all([
+          api.getAbout().then((d) => setAboutByLang(api.normalizeAboutResponse(d))),
+          api.getReports().then(setReports),
+          api
+            .getAnnouncements()
+            .then((data: Announcement[]) => setAnnouncements(Array.isArray(data) ? data : []))
+            .catch(() => setAnnouncements([])),
+          api.getTeachers().then(setTeachers),
+          api.getEvents().then((data: Event[]) => setEvents(Array.isArray(data) ? data : [])),
+        ]);
+      } catch {
+        /* keep partial state */
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   useEffect(() => {
@@ -428,8 +443,12 @@ export default function AdminDashboard() {
     }
   };
 
-  const logout = () => {
-    sessionStorage.removeItem('admin');
+  const logout = async () => {
+    try {
+      await api.adminLogout();
+    } catch {
+      /* still leave dashboard */
+    }
     navigate('/admin');
   };
 

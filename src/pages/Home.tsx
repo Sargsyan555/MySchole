@@ -18,7 +18,7 @@ export default function Home() {
         <div className={styles.hero}>
           <img
             className={styles.heroMedia}
-            src="/public/images/school.jpg"
+            src="/public/images/school.png"
             alt="School"
             loading="eager"
           />

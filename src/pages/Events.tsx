@@ -11,7 +11,7 @@ export default function Events() {
   if (error) return <div className={styles.error}>{t('eventsPage.loadError')}</div>;
 
   const isEmpty = pastEvents.length === 0 && upcomingEvents.length === 0;
-
+  console.log(pastEvents, upcomingEvents);
   return (
     <div className={styles.page}>
       {isEmpty ? (

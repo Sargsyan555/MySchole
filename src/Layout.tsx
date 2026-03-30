@@ -9,7 +9,6 @@ type DocType = (typeof DOCUMENT_TYPES)[number];
 
 const MY_SCHOOL_LINKS = [
   { to: '/my-school/staff', labelKey: 'nav.mySchoolStaff' as const },
-  { to: '/my-school/students', labelKey: 'nav.mySchoolStudents' as const },
   { to: '/my-school/about', labelKey: 'nav.mySchoolAbout' as const },
   { to: '/my-school/events', labelKey: 'nav.mySchoolEvents' as const },
 ];

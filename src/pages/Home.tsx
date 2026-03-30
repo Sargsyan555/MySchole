@@ -77,7 +77,7 @@ export default function Home() {
               <img
                 src="https://scontent.fevn13-1.fna.fbcdn.net/v/t39.30808-6/499286860_1534105188034535_7763413236250627786_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=7b2446&_nc_ohc=gD1EJAv6fM4Q7kNvwHPhZhD&_nc_oc=Adlp7sz1keWNvt_qifEz2Ul3XmDflV_FBCS5N2fGAZzq-raLoUrMws146UT9ktBe-zU&_nc_zt=23&_nc_ht=scontent.fevn13-1.fna&_nc_gid=s0eId8CesCmrXTKs7H6AOw&_nc_ss=8&oh=00_Afy8BCedy0zq3yQ6NjaUiPfiRsyja5Sun9l3S3Ofeh7nUQ&oe=69B8E39F"
 
-                alt="School building and students"
+                alt="School building"
                 className={styles.galleryImageLarge}
                 loading="lazy"
               />
@@ -88,7 +88,7 @@ export default function Home() {
               <img
                 // src="https://lib.armedu.am/files/resource/gallery/2025-05-27/17a1a14728c3bd54f6451e38ce3cad8f.jpg"
                 src="https://scontent.fevn13-1.fna.fbcdn.net/v/t39.30808-6/499286860_1534105188034535_7763413236250627786_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=7b2446&_nc_ohc=gD1EJAv6fM4Q7kNvwHPhZhD&_nc_oc=Adlp7sz1keWNvt_qifEz2Ul3XmDflV_FBCS5N2fGAZzq-raLoUrMws146UT9ktBe-zU&_nc_zt=23&_nc_ht=scontent.fevn13-1.fna&_nc_gid=s0eId8CesCmrXTKs7H6AOw&_nc_ss=8&oh=00_Afy8BCedy0zq3yQ6NjaUiPfiRsyja5Sun9l3S3Ofeh7nUQ&oe=69B8E39F"
-                alt="Students participation"
+                alt="School activity"
                 className={styles.galleryImageLarge}
                 loading="lazy"
               />

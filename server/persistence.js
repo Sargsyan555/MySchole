@@ -11,7 +11,6 @@ export const UPLOADS_IMAGES = path.join(UPLOADS_ROOT, 'images');
 
 /** JSON store files (metadata + paths to files under uploads/) */
 export const DATA_FILES = {
-  studentsPage: path.join(DATA_DIR, 'students-page.json'),
   reports: path.join(DATA_DIR, 'reports.json'),
   announcements: path.join(DATA_DIR, 'announcements.json'),
   teachers: path.join(DATA_DIR, 'teachers.json'),
@@ -67,15 +66,6 @@ export function safeUnlinkUploadUrl(url) {
   } catch (e) {
     console.warn('safeUnlinkUploadUrl:', e.message);
   }
-}
-
-export function normalizeStudentsPage(raw) {
-  const d = raw && typeof raw === 'object' ? raw : {};
-  return {
-    title: String(d.title ?? ''),
-    subtitle: String(d.subtitle ?? ''),
-    body: String(d.body ?? ''),
-  };
 }
 
 const DOC_TYPES = ['budgets', 'purchases', 'licenses', 'other'];
@@ -151,10 +141,6 @@ export function normalizeEvent(raw) {
     imageUrl: raw.imageUrl != null ? String(raw.imageUrl) : '',
     galleryImages,
   };
-}
-
-export function loadStudentsPage() {
-  return normalizeStudentsPage(readJson(DATA_FILES.studentsPage, {}));
 }
 
 export function loadReports() {

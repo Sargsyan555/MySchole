@@ -3,7 +3,6 @@
     "home": "Home",
     "mySchool": "My school",
     "mySchoolStaff": "Staff",
-    "mySchoolStudents": "Students",
     "mySchoolAbout": "About us",
     "mySchoolEvents": "Events",
     "about": "About",
@@ -38,7 +37,7 @@
   },
   "home": {
     "heroTitle": "Excellence in Education",
-    "heroSubtitle": "A place where every student can learn, grow, and succeed.",
+    "heroSubtitle": "A place where everyone can learn, grow, and succeed.",
     "aboutCta": "About Us",
     "reportsCta": "View Reports",
     "documentsCta": "View Documents",
@@ -107,21 +106,17 @@
   },
   "mySchool": {
     "title": "My school",
-    "intro": "Staff, students, about us, and school events.",
+    "intro": "Staff, about us, and school events.",
     "staff": "Staff",
     "staffIntro": "Our teaching and administrative staff.",
-    "students": "Students",
-    "studentsIntro": "Information for students and parents.",
     "aboutUs": "About us",
     "aboutUsIntro": "Mission, history, and contact information.",
     "events": "Events",
     "eventsIntro": "Calendar of school events."
   },
-  "students": {
-    "fallbackTitle": "Students",
-    "fallbackSubtitle": "Student life at our school",
-    "fallbackBody": "Content for this page can be added in the admin panel (Students tab).",
-    "imageAlt": "Students at Haykadzor school"
+  "eventsPage": {
+    "empty": "No events yet.",
+    "loadError": "Could not load events. Check that the API server is running."
   },
   "announcements": {
     "title": "Announcements",
@@ -152,7 +147,6 @@
     "viewSite": "View site",
     "logOut": "Log out",
     "tabAbout": "About",
-    "tabStudents": "Students page",
     "tabDocuments": "Documents",
     "tabAnnouncements": "Announcements",
     "tabTeachers": "Teachers",
@@ -168,9 +162,6 @@
     "aboutClientPreviewTitle": "What visitors see now (this language)",
     "aboutClientPreviewNote": "This matches the public About page. Empty saved fields use the built-in translation for that language.",
     "aboutSavedFieldsLead": "Saved text for this language (leave empty to keep using the translation above):",
-    "studentsPageTitle": "Students page (Մեր դպրոցը → Աշակերտներ)",
-    "saveStudentsPage": "Save students page",
-    "studentsPageSaved": "Students page saved.",
     "documentsSectionLead": "Upload a PDF, choose the document category, and add a title and short description.",
     "uploadPdfHint": "PDF only — drag & drop or click to choose a file.",
     "choosePdf": "Choose PDF file",

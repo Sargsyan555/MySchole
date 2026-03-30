@@ -3,7 +3,6 @@ import Layout from './Layout';
 import Home from './pages/Home';
 import About from './pages/About';
 import MySchool from './pages/MySchool';
-import Students from './pages/Students';
 import Documents from './pages/Documents';
 import DocumentsByType from './pages/DocumentsByType';
 import Announcements from './pages/Announcements';
@@ -22,7 +21,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="my-school" element={<MySchool />} />
         <Route path="my-school/staff" element={<Teachers />} />
-        <Route path="my-school/students" element={<Students />} />
+        <Route path="my-school/students" element={<Navigate to="/my-school" replace />} />
         <Route path="my-school/about" element={<About />} />
         <Route path="my-school/events" element={<Events />} />
         <Route path="about" element={<Navigate to="/my-school/about" replace />} />

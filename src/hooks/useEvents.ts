@@ -11,34 +11,35 @@ export type Event = {
   galleryImages?: string[];
 };
 
-export const PLACEHOLDER_PAST: Event[] = [
-  { id: '1', title: 'Միջոցառում 1', description: 'Վերջին ավարտված միջոցառումը։', date: '2024-01-15', status: 'past' },
-  { id: '2', title: 'Միջոցառում 2', description: 'Դպրոցական միջոցառում նկարներով։', date: '2024-02-20', status: 'past' },
-  { id: '3', title: 'Միջոցառում 3', description: 'Հանդիպում և ակտիվություններ։', date: '2024-03-10', status: 'past' },
-];
-
-export const PLACEHOLDER_UPCOMING: Event[] = [
-  { id: 'u1', title: 'Առաջիկա միջոցառում 1', description: '..........', date: '2025-04-15', status: 'upcoming' },
-  { id: 'u2', title: 'Առաջիկա միջոցառում 2', description: '..........', date: '2025-05-01', status: 'upcoming' },
-  { id: 'u3', title: 'Առաջիկա միջոցառում 3', description: '..........։', date: '2025-06-10', status: 'upcoming' },
-];
-
 /**
- * Fetches events from API; splits by status (past / upcoming). Falls back to placeholders on error.
+ * Loads events from the API only (admin dashboard → persisted store).
+ * No placeholder or seed data.
  */
 export function useEvents() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setLoadFailed(false);
     getEvents()
-      .then((all: Event[]) => setEvents(Array.isArray(all) ? all : []))
-      .catch(() => {
-        setError(null);
-        setEvents([]);
+      .then((all: Event[]) => {
+        if (!cancelled) setEvents(Array.isArray(all) ? all : []);
       })
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) {
+          setEvents([]);
+          setLoadFailed(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const pastEvents = events
@@ -49,9 +50,9 @@ export function useEvents() {
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
   return {
-    pastEvents: pastEvents.length > 0 ? pastEvents : PLACEHOLDER_PAST,
-    upcomingEvents: upcomingEvents.length > 0 ? upcomingEvents : PLACEHOLDER_UPCOMING,
+    pastEvents,
+    upcomingEvents,
     loading,
-    error,
+    error: loadFailed,
   };
 }

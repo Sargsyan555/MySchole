@@ -3,10 +3,17 @@
 }
 
 .loading,
-.error {
+.error,
+.empty {
   text-align: center;
   padding: 3rem;
   color: var(--color-text-muted);
+}
+
+.empty {
+  max-width: 36rem;
+  margin: 0 auto;
+  line-height: 1.5;
 }
 
 .error {

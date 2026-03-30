@@ -11,12 +11,10 @@ import {
   ensureDirs,
   writeJsonAtomic,
   safeUnlinkUploadUrl,
-  loadStudentsPage,
   loadReports,
   loadAnnouncements,
   loadTeachers,
   loadEvents,
-  normalizeStudentsPage,
   normalizeReport,
   normalizeAnnouncement,
   normalizeTeacher,
@@ -130,15 +128,11 @@ function saveAboutToDisk() {
 }
 
 let aboutByLang = loadAboutFromDisk();
-let studentsPage = loadStudentsPage();
 let reports = loadReports();
 let announcements = loadAnnouncements();
 let teachers = loadTeachers();
 let events = loadEvents();
 
-function saveStudentsPage() {
-  writeJsonAtomic(DATA_FILES.studentsPage, studentsPage);
-}
 function saveReports() {
   writeJsonAtomic(DATA_FILES.reports, reports);
 }
@@ -153,7 +147,6 @@ function saveEvents() {
 }
 
 app.get('/api/about', (req, res) => res.json(aboutByLang));
-app.get('/api/students-page', (req, res) => res.json(studentsPage));
 app.get('/api/reports', (req, res) => res.json(reports));
 app.get('/api/announcements', (req, res) => res.json(announcements));
 app.get('/api/reports/:id', (req, res) => {
@@ -234,12 +227,6 @@ app.put('/api/admin/about', (req, res) => {
   aboutByLang[lang] = { title, subtitle, body };
   saveAboutToDisk();
   res.json(aboutByLang);
-});
-
-app.put('/api/admin/students-page', (req, res) => {
-  studentsPage = normalizeStudentsPage({ ...studentsPage, ...req.body });
-  saveStudentsPage();
-  res.json(studentsPage);
 });
 
 const ANNOUNCEMENT_TYPES = ['vacancies', 'admission'];

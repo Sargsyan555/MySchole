@@ -49,12 +49,6 @@ export async function updateAbout(lang: AboutLang, data: AboutBlock): Promise<Ab
   return r.json();
 }
 
-export async function getStudentsPage() {
-  const r = await fetch(`${API}/students-page`);
-  if (!r.ok) throw new Error('Failed to load students page');
-  return r.json();
-}
-
 export async function getReports() {
   const r = await fetch(`${API}/reports`);
   if (!r.ok) throw new Error('Failed to load reports');
@@ -152,16 +146,6 @@ export async function updateEvent(id: string, data: Partial<EventPayload>) {
 export async function deleteEvent(id: string) {
   const r = await fetch(`${API}/admin/events/${id}`, { method: 'DELETE' });
   if (!r.ok) throw new Error('Failed to delete event');
-}
-
-export async function updateStudentsPage(data: Record<string, unknown>) {
-  const r = await fetch(`${API}/admin/students-page`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!r.ok) throw new Error('Failed to update');
-  return r.json();
 }
 
 export type AnnouncementType = 'vacancies' | 'admission';

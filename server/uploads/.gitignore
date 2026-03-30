@@ -1,0 +1,3 @@
+# Binary uploads — metadata and public URLs live in server/data/*.json
+*
+!.gitignore

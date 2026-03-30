@@ -6,9 +6,8 @@ import {
   type AboutByLang,
   type AboutLang,
 } from '../api';
+import { SCHOOL_IMAGE_URL } from '../constants/schoolAssets';
 import styles from './About.module.css';
-
-const SCHOOL_IMAGE = 'https://haykadzor.schoolsite.am/wp-content/uploads/sites/872/2016/12/cropped-20170119_111008-e1484810760105-5.jpg';
 
 function splitBody(text: string): string[] {
   const trimmed = text.trim();
@@ -115,7 +114,7 @@ export default function About() {
         <aside className={styles.aside}>
           <div className={styles.imageFrame}>
             <img
-              src={SCHOOL_IMAGE}
+              src={SCHOOL_IMAGE_URL}
               alt={t('about.imageAlt')}
               className={styles.image}
               loading="eager"

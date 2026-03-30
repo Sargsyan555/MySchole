@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useReports } from '../hooks/useReports';
 import { useEvents } from '../hooks/useEvents';
 import { EventsSection } from '../components/EventsSection';
+import { SCHOOL_IMAGE_URL } from '../constants/schoolAssets';
 import { IconCalendar, IconFileText, IconGraduationCap, IconSchool } from '../components/SiteIcons';
 import styles from './Home.module.css';
 
@@ -18,7 +19,7 @@ export default function Home() {
         <div className={styles.hero}>
           <img
             className={styles.heroMedia}
-            src="/public/images/school.png"
+            src={SCHOOL_IMAGE_URL}
             alt="School"
             loading="eager"
           />

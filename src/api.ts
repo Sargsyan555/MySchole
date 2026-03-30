@@ -1,6 +1,14 @@
-const API = '/api';
+/**
+ * Dev: `/api` (Vite proxy → Express). Vercel static: no API — set `VITE_API_ORIGIN` at build time
+ * to your deployed Express URL (e.g. https://your-api.railway.app), then requests go to `${origin}/api/...`.
+ */
+const API = (() => {
+  const origin = import.meta.env.VITE_API_ORIGIN?.trim();
+  if (origin) return `${origin.replace(/\/$/, '')}/api`;
+  return '/api';
+})();
 
-/** Same-origin API calls; sends httpOnly session cookie for admin routes. */
+/** API calls; `credentials: 'include'` for httpOnly admin cookie (same-site or CORS-configured backend). */
 function fetchApi(path: string, init: RequestInit = {}) {
   const p = path.startsWith('/') ? path : `/${path}`;
   return fetch(`${API}${p}`, { credentials: 'include', ...init });

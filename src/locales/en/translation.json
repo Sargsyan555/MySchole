@@ -65,6 +65,7 @@
     "lastEventsSubtitle": "Recent events with photos.",
     "upcomingEventsTitle": "Upcoming events",
     "upcomingEventsSubtitle": "Planned events and activities.",
+    "eventUntitled": "Untitled event",
     "noEvents": "No events yet.",
     "viewAllEvents": "View all",
     "contactTitle": "Contact & location",
@@ -116,7 +117,13 @@
   },
   "eventsPage": {
     "empty": "No events yet.",
-    "loadError": "Could not load events. Check that the API server is running."
+    "loadError": "Could not load events. Check that the API server is running.",
+    "detailBack": "← Back to events",
+    "detailNotFound": "This event could not be found.",
+    "detailGalleryTitle": "Photo gallery",
+    "openImage": "Open larger image",
+    "closeLightbox": "Close",
+    "lightboxLabel": "Image preview"
   },
   "announcements": {
     "title": "Announcements",
@@ -248,7 +255,7 @@
     "eventDescriptionPlaceholder": "Description",
     "eventTimeLabel": "Date & time",
     "eventStatusLabel": "Status",
-    "eventUpcomingImageHint": "Upcoming events use the default school image on the public site. When the event is over, switch status to Past to add a cover image and gallery.",
+    "eventUpcomingImageHint": "On the public site, upcoming events without a photo show the title and date in a styled header. When the event is over, switch status to Past to upload a cover image and gallery.",
     "eventImageLabel": "Cover image (past events)",
     "eventPastImageHint": "Shown as the main photo for this past event.",
     "galleryImagesLabel": "Gallery (past events)",

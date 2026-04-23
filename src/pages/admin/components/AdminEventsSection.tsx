@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next';
-import { UPCOMING_EVENT_PLACEHOLDER_IMAGE } from '../../../constants/eventImages';
 import type { Event } from '../types';
 import styles from '../Admin.module.css';
 
@@ -115,9 +114,6 @@ export function AdminEventsSection({
             {editing.status === 'upcoming' && (
               <div className={styles.fieldGroup}>
                 <p className={styles.fieldHint}>{t('adminDashboard.eventUpcomingImageHint')}</p>
-                <div className={styles.eventPlaceholderPreview}>
-                  <img src={UPCOMING_EVENT_PLACEHOLDER_IMAGE} alt="" />
-                </div>
               </div>
             )}
 
@@ -136,11 +132,7 @@ export function AdminEventsSection({
                   {uploadingImage && <span className={styles.uploading}>{t('adminDashboard.uploading')}</span>}
                   {editing.imageUrl && (
                     <p className={styles.imagePreview}>
-                      <img
-                        src={editing.imageUrl}
-                        alt=""
-                        style={{ maxWidth: 160, maxHeight: 100, objectFit: 'cover', borderRadius: 8 }}
-                      />
+                      <img src={editing.imageUrl} alt="" className={styles.adminEventCoverImg} />
                     </p>
                   )}
                 </div>
@@ -157,7 +149,7 @@ export function AdminEventsSection({
                   <ul className={styles.galleryPreview}>
                     {(editing.galleryImages || []).map((url, idx) => (
                       <li key={url}>
-                        <img src={url} alt="" style={{ maxWidth: 80, maxHeight: 60, objectFit: 'cover' }} />
+                        <img src={url} alt="" className={styles.adminGalleryThumb} />
                         <button
                           type="button"
                           className={styles.deleteBtn}

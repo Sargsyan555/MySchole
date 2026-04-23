@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { Event } from '../hooks/useEvents';
-import { UPCOMING_EVENT_PLACEHOLDER_IMAGE } from '../constants/eventImages';
 import styles from '../pages/Home.module.css';
 
 const EVENT_IMAGE_FALLBACK = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSGl6-SPekrXZhYF6_5457Qy-NySsLPHR-JcA&s';
@@ -46,7 +45,7 @@ export function EventsSection({
         <ul className={styles.eventsPreview}>
           {lastEvents.map((e) => (
             <li key={e.id}>
-              <div className={styles.eventCardWithImage}>
+              <Link to={`/my-school/events/${e.id}`} className={styles.eventCardWithImage}>
                 <div className={styles.eventImageWrap}>
                   <img
                     src={e.imageUrl || e.galleryImages?.[0] || EVENT_IMAGE_FALLBACK}
@@ -60,7 +59,7 @@ export function EventsSection({
                   <h4 className={styles.eventCardTitle}>{e.title}</h4>
                   <time className={styles.eventCardDate}>{e.date}</time>
                 </div>
-              </div>
+              </Link>
             </li>
           ))}
         </ul>
@@ -71,24 +70,38 @@ export function EventsSection({
         <ul className={styles.eventsPreview}>
           {upEvents.map((e) => (
             <li key={e.id}>
-              <div className={styles.eventCardWithImage}>
+              <Link to={`/my-school/events/${e.id}`} className={styles.eventCardWithImage}>
                 <div className={styles.eventImageWrap}>
-                  <img
-                    src={e.imageUrl?.trim() ? e.imageUrl : UPCOMING_EVENT_PLACEHOLDER_IMAGE}
-                    alt={e.title}
-                    className={styles.eventImage}
-                    loading="lazy"
-                  />
-                  <div className={styles.eventImageOverlay} />
-                </div>
-                <div className={styles.eventCardContent}>
-                  <h4 className={styles.eventCardTitle}>{e.title}</h4>
-                  <time className={styles.eventCardDate}>{e.date}</time>
-                  {e.description && (
-                    <p className={styles.eventCardDescription}>{e.description}</p>
+                  {e.imageUrl?.trim() ? (
+                    <>
+                      <img src={e.imageUrl.trim()} alt={e.title} className={styles.eventImage} loading="lazy" />
+                      <div className={styles.eventImageOverlay} />
+                    </>
+                  ) : (
+                    <div className={styles.eventUpcomingHeader}>
+                      <h4 className={styles.eventUpcomingHeaderTitle}>
+                        {e.title?.trim() || t('home.eventUntitled')}
+                      </h4>
+                      <time className={styles.eventUpcomingHeaderDate} dateTime={e.date}>
+                        {e.date}
+                      </time>
+                    </div>
                   )}
                 </div>
-              </div>
+                <div className={styles.eventCardContent}>
+                  {e.imageUrl?.trim() ? (
+                    <>
+                      <h4 className={styles.eventCardTitle}>{e.title}</h4>
+                      <time className={styles.eventCardDate}>{e.date}</time>
+                      {e.description ? (
+                        <p className={styles.eventCardDescription}>{e.description}</p>
+                      ) : null}
+                    </>
+                  ) : e.description ? (
+                    <p className={styles.eventCardDescription}>{e.description}</p>
+                  ) : null}
+                </div>
+              </Link>
             </li>
           ))}
         </ul>

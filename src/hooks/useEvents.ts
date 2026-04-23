@@ -50,6 +50,7 @@ export function useEvents() {
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
   return {
+    events,
     pastEvents,
     upcomingEvents,
     loading,

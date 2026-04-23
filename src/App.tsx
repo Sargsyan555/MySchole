@@ -10,6 +10,7 @@ import AnnouncementsByType from './pages/AnnouncementsByType';
 import Reports from './pages/Reports';
 import ReportView from './pages/ReportView';
 import Events from './pages/Events';
+import EventDetail from './pages/EventDetail';
 import Teachers from './pages/Teachers';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="my-school/staff" element={<Teachers />} />
         <Route path="my-school/students" element={<Navigate to="/my-school" replace />} />
         <Route path="my-school/about" element={<About />} />
+        <Route path="my-school/events/:eventId" element={<EventDetail />} />
         <Route path="my-school/events" element={<Events />} />
         <Route path="about" element={<Navigate to="/my-school/about" replace />} />
         <Route path="events" element={<Navigate to="/my-school/events" replace />} />
